@@ -76,9 +76,9 @@ export const useWorkspaceModeStore = create((set, get) => ({
   isDualModeEligible: (user) => {
     if (!user) return false;
     if (user.role === 'HOSPITAL_ADMIN') return true;
-    const isPrimaryAdmin = user.role === 'HOSPITAL_ADMIN' || user.role === 'SUPER_ADMIN';
+    const isPrimaryAdmin = user.role === 'HOSPITAL_ADMIN';
     const additional = Array.isArray(user.additionalRoles) ? user.additionalRoles : [];
-    const hasAdminInAdditional = additional.includes('HOSPITAL_ADMIN') || additional.includes('SUPER_ADMIN');
+    const hasAdminInAdditional = additional.includes('HOSPITAL_ADMIN');
     return (isPrimaryAdmin || hasAdminInAdditional) && getOperationalRoles(user).length > 0;
   },
 }));

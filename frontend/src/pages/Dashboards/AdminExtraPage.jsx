@@ -719,16 +719,7 @@ export const AdminExtraPage = () => {
 
   useEffect(() => { setActiveTab(getTab()); }, [location.pathname, location.search]);
 
-  const formatTenantPath = (path) => {
-    if (!path) return path;
-    if (user?.role === 'SUPER_ADMIN') return path;
-    const domainFromPath = location.pathname.split('/')[1];
-    const isKnownNonTenant = ['admin', 'hospital-admin', 'doctor', 'reception', 'billing', 'pharmacy', 'laboratory', 'radiology', 'nursing', '403', 'login'].includes(domainFromPath);
-    const domain = user?.hospitalDomain || (!isKnownNonTenant && domainFromPath ? domainFromPath : null);
-    if (!domain) return path;
-    if (path.startsWith(`/${domain}`)) return path;
-    return `/${domain}${path}`;
-  };
+  const formatTenantPath = (path) => path;
 
   const handleTabChange = (tabKey) => {
     setActiveTab(tabKey);

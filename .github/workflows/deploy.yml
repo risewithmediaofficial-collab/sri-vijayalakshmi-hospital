@@ -1,147 +1,144 @@
-name: Hospital Management Platform Deployment Workflow
+name: Sri Vijaya Lakshmi Hospital — Production CI/CD Workflow
 
 on:
   push:
-    branches: [ main, master, test ]
+    branches: [ main, master, production, test ]
   pull_request:
-    branches: [ main, master, test ]
+    branches: [ main, master ]
 
 concurrency:
   group: deployment-${{ github.ref }}
   cancel-in-progress: true
 
 jobs:
-  test-and-build:
+  # --------------------------------------------------------------------------
+  # 1. Continuous Integration (Lint, Typecheck & Production Build)
+  # --------------------------------------------------------------------------
+  ci-build-test:
+    name: Build & Verify Artifacts
     runs-on: ubuntu-latest
 
     steps:
       - name: Checkout Code
         uses: actions/checkout@v4
 
-      - name: Setup Node.js with NPM Caching
+      - name: Setup Node.js (v20)
         uses: actions/setup-node@v4
         with:
           node-version: 20
           cache: 'npm'
           cache-dependency-path: 'frontend/package-lock.json'
 
-      - name: Fast Build Frontend
+      - name: Test Frontend Production Build
         run: |
           cd frontend
           npm ci
           npm run build
 
-  deploy-test:
-    needs: test-and-build
-    if: github.event_name == 'push' && github.ref == 'refs/heads/test'
-    runs-on: ubuntu-latest
-    steps:
-      - name: Deploy to Test Server
-        uses: appleboy/ssh-action@v1.2.0
-        with:
-          host: ${{ secrets.HOST }}
-          username: ${{ secrets.USERNAME }}
-          key: ${{ secrets.SSH_KEY }}
-          port: ${{ secrets.PORT }}
-          timeout: 180s
-          command_timeout: 20m
-          script: |
-            DEPLOY_DIR="/docker/hospital-billing-test"
-            if [ ! -d "$DEPLOY_DIR/.git" ]; then
-              mkdir -p /docker
-              rm -rf "$DEPLOY_DIR"
-              git clone -b test https://github.com/risewithmediaofficial-collab/hospital-billing-and-management-.git "$DEPLOY_DIR"
-            fi
-            cd "$DEPLOY_DIR"
-            git fetch origin test
-            git checkout test
-            git reset --hard origin/test
+      - name: Verify Backend Dependencies & Syntax
+        run: |
+          cd backend
+          npm ci
+          node --check src/server.js
+          node --check src/app.js
 
-            # Configure Test environment with port 93
-            echo "COMPOSE_PROJECT_NAME=hpmbs_test" > .env
-            echo "FRONTEND_PORT=93" >> .env
-            echo "NODE_ENV=development" >> .env
-            echo "MONGO_INITDB_DATABASE=hpmbs_db" >> .env
-            echo "MONGO_URI=mongodb://mongo:27017/hpmbs_db" >> .env
-            echo "CORS_ORIGIN=*" >> .env
-            echo "JWT_SECRET=hpmbs_test_jwt_secret_key_2026_x89" >> .env
-            echo "JWT_EXPIRES_IN=7d" >> .env
-            echo "REFRESH_TOKEN_SECRET=hpmbs_test_refresh_secret_key_2026_x89" >> .env
-            echo "REFRESH_TOKEN_EXPIRES_IN=30d" >> .env
-            echo "FIELD_ENCRYPTION_KEY=aHBtYnNfYWVzMjU2X2VuY3J5cHRpb25fa2V5XzMyYiE=" >> .env
-            echo "SEARCH_HASH_KEY=hpmbs_search_hash_secret_key_2026_production_safe_key_32b" >> .env
-
-            (docker compose down --remove-orphans || true)
-
-            # Force-remove any stale containers from old project names (hospital-billing-test_*)
-            OLD_BY_NAME=$(docker ps -aq --filter "name=hospital-billing-test")
-            if [ -n "$OLD_BY_NAME" ]; then
-              echo "Removing stale hospital-billing-test containers..."
-              docker rm -f $OLD_BY_NAME || true
-            fi
-
-            # Auto-cleanup any remaining container occupying port 93
-            OLD_CONTAINER=$(docker ps -q --filter "publish=93")
-            if [ -n "$OLD_CONTAINER" ]; then
-              echo "Cleaning up container occupying port 93: $OLD_CONTAINER"
-              docker stop $OLD_CONTAINER || true
-              docker rm $OLD_CONTAINER || true
-            fi
-
-            (docker compose up -d --build --remove-orphans) || (docker-compose up -d --build --remove-orphans)
-            echo "✅ Test deployment completed successfully at $DEPLOY_DIR on port 93"
-
+  # --------------------------------------------------------------------------
+  # 2. Production Deployment via SSH & Docker Compose
+  # --------------------------------------------------------------------------
   deploy-production:
-    needs: test-and-build
-    if: github.event_name == 'push' && (github.ref == 'refs/heads/main' || github.ref == 'refs/heads/master')
+    name: Deploy to Production Server
+    needs: ci-build-test
+    if: github.event_name == 'push' && (github.ref == 'refs/heads/main' || github.ref == 'refs/heads/master' || github.ref == 'refs/heads/production')
     runs-on: ubuntu-latest
+
     steps:
-      - name: Deploy to Production Server
+      - name: Deploy via SSH
         uses: appleboy/ssh-action@v1.2.0
         with:
           host: ${{ secrets.HOST }}
           username: ${{ secrets.USERNAME }}
           key: ${{ secrets.SSH_KEY }}
-          port: ${{ secrets.PORT }}
+          port: ${{ secrets.PORT || 22 }}
           timeout: 180s
-          command_timeout: 20m
+          command_timeout: 25m
           script: |
-            DEPLOY_DIR="/docker/hospital-billing"
+            set -e
+
+            DEPLOY_DIR="/docker/svlh-hospital"
+            echo "🚀 Starting Production Deployment for Sri Vijaya Lakshmi Hospital in $DEPLOY_DIR..."
+
+            # 1. Clone repository if not already present
             if [ ! -d "$DEPLOY_DIR/.git" ]; then
               mkdir -p /docker
               rm -rf "$DEPLOY_DIR"
-              git clone -b main https://github.com/risewithmediaofficial-collab/hospital-billing-and-management-.git "$DEPLOY_DIR"
+              git clone https://github.com/${{ github.repository }}.git "$DEPLOY_DIR"
             fi
+
             cd "$DEPLOY_DIR"
-            git fetch origin main || git fetch origin master || true
-            git checkout main || git checkout master || true
-            git reset --hard origin/main || git reset --hard origin/master || true
 
-            # Ensure .env exists with Production configuration on port 86
+            # 2. Fetch and checkout the target branch
+            TARGET_BRANCH="${{ github.ref_name }}"
+            git fetch origin "$TARGET_BRANCH"
+            git checkout "$TARGET_BRANCH"
+            git reset --hard "origin/$TARGET_BRANCH"
+
+            # 3. Ensure production .env exists
             if [ ! -f .env ]; then
-              echo "COMPOSE_PROJECT_NAME=hpmbs_main" > .env
-              echo "FRONTEND_PORT=86" >> .env
-              echo "NODE_ENV=production" >> .env
-              echo "MONGO_INITDB_DATABASE=hpmbs_db" >> .env
-              echo "MONGO_URI=mongodb://mongo:27017/hpmbs_db" >> .env
-              echo "CORS_ORIGIN=*" >> .env
-              echo "JWT_SECRET=hpmbs_super_secure_jwt_secret_key_2026_x89" >> .env
-              echo "JWT_EXPIRES_IN=7d" >> .env
-              echo "REFRESH_TOKEN_SECRET=hpmbs_super_secure_refresh_secret_key_2026_x89" >> .env
-              echo "REFRESH_TOKEN_EXPIRES_IN=30d" >> .env
-              echo "FIELD_ENCRYPTION_KEY=aHBtYnNfYWVzMjU2X2VuY3J5cHRpb25fa2V5XzMyYiE=" >> .env
-              echo "SEARCH_HASH_KEY=hpmbs_search_hash_secret_key_2026_production_safe_key_32b" >> .env
+              echo "Creating initial production .env..."
+              cat << 'EOF' > .env
+            COMPOSE_PROJECT_NAME=svlh
+            FRONTEND_PORT=80
+            BACKEND_PORT=5000
+            MONGO_PORT=27017
+            NODE_ENV=production
+            MONGO_INITDB_DATABASE=svlh_hospital_db
+            MONGO_URI=mongodb://mongo:27017/svlh_hospital_db
+            CORS_ORIGIN=*
+            PUBLIC_APP_URL=http://localhost
+            JWT_SECRET=${{ secrets.JWT_SECRET || 'svlh_prod_jwt_secret_key_2026_x89_secure' }}
+            JWT_EXPIRES_IN=7d
+            REFRESH_TOKEN_SECRET=${{ secrets.REFRESH_TOKEN_SECRET || 'svlh_prod_refresh_secret_key_2026_x89_secure' }}
+            REFRESH_TOKEN_EXPIRES_IN=30d
+            FIELD_ENCRYPTION_KEY=${{ secrets.FIELD_ENCRYPTION_KEY || 'aHBtYnNfYWVzMjU2X2VuY3J5cHRpb25fa2V5XzMyYiE=' }}
+            SEARCH_HASH_KEY=${{ secrets.SEARCH_HASH_KEY || 'svlh_search_hash_secret_key_2026_production_safe_key_32b' }}
+            EMAIL_PROVIDER=console
+            EMAIL_FROM=noreply@srivijayalakshmihospital.com
+            EOF
             fi
 
-            (docker compose down --remove-orphans || true)
+            # 4. Gracefully take down previous containers
+            echo "Stopping existing containers..."
+            docker compose down --remove-orphans || true
 
-            # Auto-cleanup any orphan container occupying port 86
-            OLD_CONTAINER=$(docker ps -q --filter "publish=86")
-            if [ -n "$OLD_CONTAINER" ]; then
-              echo "Cleaning up container occupying port 86: $OLD_CONTAINER"
-              docker stop $OLD_CONTAINER || true
-              docker rm $OLD_CONTAINER || true
+            # 5. Clean up any stale container holding the frontend port
+            FRONTEND_PORT_NUM=$(grep -E '^FRONTEND_PORT=' .env | cut -d '=' -f2 || echo "80")
+            PORT_HOLDER=$(docker ps -q --filter "publish=${FRONTEND_PORT_NUM}")
+            if [ -n "$PORT_HOLDER" ]; then
+              echo "Freeing port ${FRONTEND_PORT_NUM} from container ${PORT_HOLDER}..."
+              docker stop "$PORT_HOLDER" || true
+              docker rm "$PORT_HOLDER" || true
             fi
 
-            (docker compose up -d --build --remove-orphans) || (docker-compose up -d --build --remove-orphans)
-            echo "✅ Production deployment completed successfully at $DEPLOY_DIR on port 86"
+            # 6. Build and start new production containers
+            echo "Building and starting production containers..."
+            docker compose up -d --build --remove-orphans
+
+            # 7. Wait for containers and database to be healthy
+            echo "Waiting for services to become healthy..."
+            sleep 10
+
+            # 8. Initialize Hospital record, roles, and admin account
+            echo "Running Sri Vijaya Lakshmi Hospital initialization..."
+            docker compose exec -T backend node scripts/init-hospital.js || true
+
+            # 9. Verify deployment with healthcheck
+            echo "Verifying deployment health..."
+            if curl -f -s "http://127.0.0.1:${FRONTEND_PORT_NUM}/api/v1/health" | grep -q "UP"; then
+              echo "✅ Health check PASSED: Sri Vijaya Lakshmi Hospital is UP and running on port ${FRONTEND_PORT_NUM}!"
+            else
+              echo "⚠️ Health check warning: Please verify container logs using: docker compose logs backend"
+            fi
+
+            echo "=========================================================="
+            echo "🎉 Sri Vijaya Lakshmi Hospital deployed successfully!"
+            echo "=========================================================="

@@ -21,16 +21,7 @@ export const HospitalAdminManagementViews = ({ viewType }) => {
   const { user } = useAuthStore();
   const { socket } = useSocket();
 
-  const formatTenantPath = (path) => {
-    if (!path) return path;
-    if (user?.role === 'SUPER_ADMIN') return path;
-    const domainFromPath = location.pathname.split('/')[1];
-    const isKnownNonTenant = ['admin', 'hospital-admin', 'doctor', 'reception', 'billing', 'pharmacy', 'laboratory', 'radiology', 'nursing', '403', 'login', 'reset-password'].includes(domainFromPath);
-    const domain = user?.hospitalDomain || (!isKnownNonTenant && domainFromPath ? domainFromPath : null);
-    if (!domain) return path;
-    if (path.startsWith(`/${domain}`)) return path;
-    return `/${domain}${path}`;
-  };
+  const formatTenantPath = (path) => path;
 
   const navigateToStaff = () => {
     navigate(formatTenantPath('/admin/staff'));

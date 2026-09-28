@@ -7,12 +7,7 @@ export const SoloDoctorFlowBar = ({ className = '', activeStepOverride = null })
   const location = useLocation();
   const { user } = useAuthStore();
 
-  const formatTenantPath = (path) => {
-    if (!path) return path;
-    if (user?.role === 'SUPER_ADMIN' || !user?.hospitalDomain) return path;
-    if (path.startsWith(`/${user.hospitalDomain}`)) return path;
-    return `/${user.hospitalDomain}${path}`;
-  };
+  const formatTenantPath = (path) => path;
 
   const steps = [
     {

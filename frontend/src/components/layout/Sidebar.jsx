@@ -297,42 +297,17 @@ export const Sidebar = ({ isOpen, onClose }) => {
     };
   }, [user?.role, user?._id || user?.id, socket, fetchReceiptsCount]);
 
-  const formatTenantPath = (path) => {
-    if (!path) return path;
-    const targetPath = path;
-    if (user?.role === 'SUPER_ADMIN') return targetPath;
-    const domainFromPath = location.pathname.split('/')[1];
-    const isKnownNonTenant = ['admin', 'hospital-admin', 'doctor', 'reception', 'billing', 'pharmacy', 'laboratory', 'radiology', 'nursing', '403', 'login', 'reset-password'].includes(domainFromPath);
-    const domain = user?.hospitalDomain || (!isKnownNonTenant && domainFromPath ? domainFromPath : null);
-
-    if (!domain) {
-      if (targetPath.startsWith('/admin')) {
-        return targetPath.replace(/^\/admin/, '/hospital-admin');
-      }
-      return targetPath;
-    }
-    if (targetPath.startsWith(`/${domain}`)) return targetPath;
-    return `/${domain}${targetPath}`;
-  };
+  const formatTenantPath = (path) => path;
 
   const handleSwitchMode = (targetMode) => {
     setMode(targetMode);
-    const domainFromPath = location.pathname.split('/')[1];
-    const isKnownNonTenant = ['admin', 'hospital-admin', 'doctor', 'reception', 'billing', 'pharmacy', 'laboratory', 'radiology', 'nursing', '403', 'login', 'reset-password'].includes(domainFromPath);
-    const domain = user?.hospitalDomain || (!isKnownNonTenant && domainFromPath ? domainFromPath : null);
 
     if (targetMode === 'WORK') {
       const workRoute = getDefaultWorkRoute(user);
       if (!workRoute) return;
-      const target = domain ? `/${domain}${workRoute}` : workRoute;
-      navigate(target);
+      navigate(workRoute);
     } else if (targetMode === 'ADMIN') {
-      if (user?.role === 'SUPER_ADMIN') {
-        navigate('/admin/dashboard');
-      } else {
-        const target = domain ? `/${domain}/admin/dashboard` : '/hospital-admin/dashboard';
-        navigate(target);
-      }
+      navigate('/admin/dashboard');
     }
   };
 

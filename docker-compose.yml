@@ -3,25 +3,25 @@ services:
     build:
       context: ./frontend
       dockerfile: Dockerfile
-    container_name: ${COMPOSE_PROJECT_NAME:-hpmbs}_frontend
+    container_name: ${COMPOSE_PROJECT_NAME:-svlh}_frontend
     restart: always
     ports:
-      - "${FRONTEND_PORT:-86}:80"
+      - "${FRONTEND_PORT:-80}:80"
     depends_on:
       - backend
     networks:
-      - hpmbs_net
+      - svlh_net
 
   mongo:
     image: mongo:7.0
-    container_name: ${COMPOSE_PROJECT_NAME:-hpmbs}_mongo
+    container_name: ${COMPOSE_PROJECT_NAME:-svlh}_mongo
     restart: always
     environment:
-      MONGO_INITDB_DATABASE: ${MONGO_INITDB_DATABASE:-hpmbs_db}
+      MONGO_INITDB_DATABASE: ${MONGO_INITDB_DATABASE:-svlh_hospital_db}
     volumes:
       - mongo_data:/data/db
-    expose:
-      - "27017"
+    ports:
+      - "${MONGO_PORT:-27017}:27017"
     healthcheck:
       test: ["CMD", "mongosh", "--eval", "db.adminCommand('ping')"]
       interval: 10s
@@ -29,29 +29,32 @@ services:
       retries: 5
       start_period: 5s
     networks:
-      - hpmbs_net
+      - svlh_net
 
   backend:
     build:
       context: ./backend
       dockerfile: Dockerfile
-    container_name: ${COMPOSE_PROJECT_NAME:-hpmbs}_backend
+    container_name: ${COMPOSE_PROJECT_NAME:-svlh}_backend
     restart: always
     env_file:
       - .env
     environment:
       PORT: 5000
+      NODE_ENV: ${NODE_ENV:-production}
+      MONGO_URI: ${MONGO_URI:-mongodb://mongo:27017/svlh_hospital_db}
     expose:
       - "5000"
     depends_on:
       mongo:
         condition: service_healthy
     networks:
-      - hpmbs_net
+      - svlh_net
 
 networks:
-  hpmbs_net:
+  svlh_net:
     driver: bridge
 
 volumes:
   mongo_data:
+    name: ${COMPOSE_PROJECT_NAME:-svlh}_mongo_data

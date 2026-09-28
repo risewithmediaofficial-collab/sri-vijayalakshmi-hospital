@@ -245,19 +245,7 @@ const HospitalAdminDashboardInner = () => {
   const [errorMsg, setErrorMsg] = useState(null);
   const [isExporting, setIsExporting] = useState(false);
 
-  const formatTenantPath = (path) => {
-    if (user?.role === 'SUPER_ADMIN') return path;
-    const domainFromPath = location.pathname.split('/')[1];
-    const isKnownNonTenant = ['admin', 'hospital-admin', 'doctor', 'reception', 'billing', 'pharmacy', 'laboratory', 'radiology', 'nursing', '403', 'login', 'reset-password'].includes(domainFromPath);
-    const domain = user?.hospitalDomain || (!isKnownNonTenant && domainFromPath ? domainFromPath : null);
-
-    if (!domain) {
-      if (path.startsWith('/admin')) return path.replace(/^\/admin/, '/hospital-admin');
-      return path;
-    }
-    if (path.startsWith(`/${domain}`)) return path;
-    return `/${domain}${path}`;
-  };
+  const formatTenantPath = (path) => path;
 
   useEffect(() => {
     fetchStaff();

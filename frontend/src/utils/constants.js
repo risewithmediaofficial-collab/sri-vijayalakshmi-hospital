@@ -169,9 +169,6 @@ export const MODULE_ACTION_MATRIX = {
 };
 
 export const ROLE_NAVIGATION = {
-  SUPER_ADMIN: [
-    { title: 'Emergency Console', path: '/admin/emergency', icon: 'ShieldAlert', module: 'emergency', category: 'Emergency Services' },
-  ],
   HOSPITAL_ADMIN: [
     // Executive & System Management
     { title: 'Dashboard Overview', path: '/admin/dashboard', icon: 'LayoutDashboard', module: 'dashboard', category: 'Executive & Setup' },
@@ -196,8 +193,6 @@ export const ROLE_NAVIGATION = {
     { title: 'Reports & Analytics', path: '/admin/reports', icon: 'BarChart3', module: 'reports', category: 'System & Analytics' },
     { title: 'Audit Logs', path: '/admin/reports?tab=audit', icon: 'FileText', module: 'auditLogs', category: 'System & Analytics' },
     { title: 'Notifications & Alerts', path: '/admin/dashboard?tab=notifications', icon: 'Bell', module: 'notifications', category: 'System & Analytics' },
-    { title: 'Plan Details', path: '/admin/plan-details', icon: 'BadgeCheck', module: 'dashboard', category: 'System & Analytics' },
-    { title: 'Usage & Limits', path: '/admin/usage-limits', icon: 'Gauge', module: 'dashboard', category: 'System & Analytics' },
   ],
   DOCTOR: [
     { title: 'Clinical EMR Desk', path: '/doctor/dashboard', icon: 'Stethoscope', module: 'doctorConsultation', category: 'Clinical Consultations' },

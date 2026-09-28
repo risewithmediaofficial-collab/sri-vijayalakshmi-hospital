@@ -43,22 +43,7 @@ export const NotificationDropdown = ({ isOpen, onClose }) => {
     SUPER_ADMIN: '/admin/hospitals',
   };
 
-  const formatTenantPath = (path) => {
-    if (!path) return path;
-    if (user?.role === 'SUPER_ADMIN') return path;
-    const domain = user?.hospitalDomain || window.location.pathname.split('/')[1];
-    const isReserved = ['admin', 'hospital-admin', 'login', 'doctor', 'nurse', 'nursing', 'reception', 'billing', 'pharmacy', 'laboratory', 'radiology', '403', '404'].includes(domain);
-    const tenantDomain = user?.hospitalDomain || (!isReserved && domain ? domain : null);
-
-    let cleanPath = path;
-    if (tenantDomain && cleanPath.startsWith('/hospital-admin')) {
-      cleanPath = cleanPath.replace(/^\/hospital-admin/, '/admin');
-    }
-
-    if (!tenantDomain) return cleanPath;
-    if (cleanPath.startsWith(`/${tenantDomain}`)) return cleanPath;
-    return `/${tenantDomain}${cleanPath}`;
-  };
+  const formatTenantPath = (path) => path;
 
   const onCloseRef = useRef(onClose);
   useEffect(() => {

@@ -1,24 +1,16 @@
-import React, { useState, useEffect } from 'react';
-import { useNavigate, Link, useParams, useLocation } from 'react-router-dom';
+import React, { useState } from 'react';
+import { useNavigate, Link } from 'react-router-dom';
 import { useAuthStore } from '../store/authStore';
 import { Input } from '../components/ui/Input';
 import { PasswordInput } from '../components/ui/PasswordInput';
 import { Button } from '../components/ui/Button';
 import { ROLES } from '../utils/constants';
-import { axiosClient } from '../api/axiosClient';
-import { HospitalNotFoundPage } from './HospitalNotFoundPage';
-import { verifiedDomainCache, notFoundDomainCache } from '../components/auth/TenantRouteGuard';
-import { Lock, Mail, Building2, PlusCircle, AlertCircle, ShieldCheck, User, Users, Phone, Calendar, Hash, Globe, Info } from 'lucide-react';
+import { Lock, Mail, Building2, AlertCircle, ShieldCheck, User, Users, Phone, Calendar, Hash } from 'lucide-react';
+
+const HOSPITAL_NAME = 'Sri Vijaya Lakshmi Hospital';
 
 export const LoginPage = () => {
-  const { hospitalDomain } = useParams();
-  const location = useLocation();
   const [activeTab, setActiveTab] = useState('STAFF'); // 'STAFF' | 'PATIENT' | 'GUARDIAN'
-
-  // Domain verification state
-  const [hospitalInfo, setHospitalInfo] = useState(null);
-  const [domainLoading, setDomainLoading] = useState(!!hospitalDomain);
-  const [domainNotFound, setDomainNotFound] = useState(false);
 
   // Staff credentials
   const [email, setEmail] = useState('');
@@ -33,92 +25,39 @@ export const LoginPage = () => {
   const [guardianPatientMobile, setGuardianPatientMobile] = useState('');
   const [guardianUHID, setGuardianUHID] = useState('');
 
-  const { user: currentUser, logout, login, patientLogin, guardianLogin, isLoading, error } = useAuthStore();
+  const { login, patientLogin, guardianLogin, isLoading, error } = useAuthStore();
   const navigate = useNavigate();
-
-  // If user is navigating to a specific tenant login and has a session from another tenant, clear it
-  useEffect(() => {
-    if (hospitalDomain && currentUser && currentUser.role !== 'SUPER_ADMIN') {
-      const userDomain = currentUser.hospitalDomain || currentUser.hospital?.domain || currentUser.hospital?.subdomain || '';
-      if (userDomain && userDomain.toLowerCase() !== hospitalDomain.toLowerCase()) {
-        logout();
-      }
-    }
-  }, [hospitalDomain, currentUser, logout]);
-
-  useEffect(() => {
-    if (!hospitalDomain) {
-      setDomainLoading(false);
-      return;
-    }
-    let isMounted = true;
-    setDomainLoading(true);
-    setDomainNotFound(false);
-
-    axiosClient.get(`/saas/hospitals/by-domain/${hospitalDomain}`)
-      .then((res) => {
-        if (!isMounted) return;
-        const data = res?.data || res;
-        setHospitalInfo(data);
-        // Pre-populate domain cache so post-login navigation is instant
-        verifiedDomainCache.add(hospitalDomain.toLowerCase());
-        setDomainLoading(false);
-      })
-      .catch((err) => {
-        if (!isMounted) return;
-        const status = err?.response?.status || err?.status;
-        if (status === 404 || err?.error?.code === 'HOSPITAL_NOT_FOUND') {
-          notFoundDomainCache.add(hospitalDomain.toLowerCase());
-          setDomainNotFound(true);
-        } else {
-          // Non-404 error (502, network) — still allow login page to show
-          verifiedDomainCache.add(hospitalDomain.toLowerCase());
-        }
-        setDomainLoading(false);
-      });
-
-    return () => {
-      isMounted = false;
-    };
-  }, [hospitalDomain]);
-
-  if (domainNotFound) {
-    return <HospitalNotFoundPage domain={hospitalDomain} />;
-  }
 
   const handleRouteRedirect = (user) => {
     if (user.defaultRoute) {
       navigate(user.defaultRoute);
       return;
     }
-    const domainPrefix = hospitalDomain || user.hospitalDomain || '';
-    const prefix = domainPrefix ? `/${domainPrefix}` : '';
     const routes = {
-      [ROLES.SUPER_ADMIN]: '/admin/dashboard',
-      [ROLES.HOSPITAL_ADMIN]: `${prefix}/admin/dashboard`,
-      [ROLES.DOCTOR]: `${prefix}/doctor/dashboard`,
-      [ROLES.NURSE]: `${prefix}/nurse/dashboard`,
-      [ROLES.NURSE_INCHARGE]: `${prefix}/nurse-incharge/dashboard`,
-      [ROLES.RECEPTIONIST]: `${prefix}/reception/dashboard`,
-      [ROLES.PHARMACIST]: `${prefix}/pharmacy/dashboard`,
-      [ROLES.LAB_TECH]: `${prefix}/laboratory/dashboard`,
-      [ROLES.RADIOLOGIST]: `${prefix}/radiology/dashboard`,
-      [ROLES.CASHIER]: `${prefix}/billing/dashboard`,
-      [ROLES.INVENTORY_MANAGER]: `${prefix}/inventory/dashboard`,
-      [ROLES.HR_MANAGER]: `${prefix}/hr/dashboard`,
-      [ROLES.PATIENT]: `${prefix}/patient/dashboard`,
-      [ROLES.GUARDIAN]: `${prefix}/guardian/dashboard`,
+      [ROLES.HOSPITAL_ADMIN]: '/admin/dashboard',
+      [ROLES.DOCTOR]: '/doctor/dashboard',
+      [ROLES.NURSE]: '/nursing/dashboard',
+      [ROLES.NURSE_INCHARGE]: '/nurse-incharge/dashboard',
+      [ROLES.RECEPTIONIST]: '/reception/dashboard',
+      [ROLES.PHARMACIST]: '/pharmacy/dashboard',
+      [ROLES.LAB_TECH]: '/laboratory/dashboard',
+      [ROLES.RADIOLOGIST]: '/radiology/dashboard',
+      [ROLES.CASHIER]: '/billing/dashboard',
+      [ROLES.INVENTORY_MANAGER]: '/inventory/dashboard',
+      [ROLES.HR_MANAGER]: '/hr/dashboard',
+      [ROLES.PATIENT]: '/patient-portal/dashboard',
+      [ROLES.GUARDIAN]: '/guardian-portal/dashboard',
     };
-    navigate(routes[user.role] || (prefix ? `${prefix}/dashboard` : '/'));
+    navigate(routes[user.role] || '/admin/dashboard');
   };
 
   const handleStaffLogin = async (e) => {
     e.preventDefault();
     try {
       const cleanEmail = email ? email.trim() : '';
-      const user = await login(cleanEmail, password, hospitalDomain);
+      const user = await login(cleanEmail, password);
       handleRouteRedirect(user);
-    } catch (err) {
+    } catch {
       // Error state handled in authStore
     }
   };
@@ -126,11 +65,9 @@ export const LoginPage = () => {
   const handlePatientLogin = async (e) => {
     e.preventDefault();
     try {
-      const cleanMobile = patientMobile ? patientMobile.trim() : '';
-      const cleanDob = patientDob ? patientDob.trim() : '';
-      const user = await patientLogin(cleanMobile, cleanDob, hospitalDomain);
+      const user = await patientLogin(patientMobile.trim(), patientDob.trim());
       handleRouteRedirect(user);
-    } catch (err) {
+    } catch {
       // Error state handled in authStore
     }
   };
@@ -138,32 +75,29 @@ export const LoginPage = () => {
   const handleGuardianLogin = async (e) => {
     e.preventDefault();
     try {
-      const cleanGuardianMobile = guardianMobile ? guardianMobile.trim() : '';
-      const cleanPatientMobile = guardianPatientMobile ? guardianPatientMobile.trim() : '';
-      const cleanUHID = guardianUHID ? guardianUHID.trim() : '';
-      const user = await guardianLogin(cleanGuardianMobile, cleanPatientMobile, cleanUHID, hospitalDomain);
+      const user = await guardianLogin(guardianMobile.trim(), guardianPatientMobile.trim(), guardianUHID.trim());
       handleRouteRedirect(user);
-    } catch (err) {
+    } catch {
       // Error state handled in authStore
     }
   };
 
   return (
-    <div className="min-h-screen bg-slate-50 flex items-center justify-center py-12 px-4 sm:px-6 lg:px-8">
+    <div className="min-h-screen bg-slate-50 flex items-center justify-center py-12 px-4 sm:px-6 lg:px-8 relative">
       {/* Background decorative elements */}
       <div className="absolute inset-0 overflow-hidden pointer-events-none">
         <div className="absolute -top-40 -right-40 w-80 h-80 rounded-full bg-indigo-100 opacity-60 blur-3xl"></div>
         <div className="absolute -bottom-40 -left-40 w-80 h-80 rounded-full bg-slate-200 opacity-60 blur-3xl"></div>
       </div>
 
-      <div className="relative w-full max-w-md">
-        {/* Header */}
+      <div className="relative w-full max-w-md z-10">
+        {/* Hospital Header */}
         <div className="text-center mb-6">
           <div className="inline-flex items-center justify-center w-16 h-16 rounded-2xl bg-indigo-600 shadow-lg mb-4 border border-indigo-500">
             <Building2 size={30} className="text-white" />
           </div>
-          <h1 className="text-3xl font-black text-slate-900 tracking-tight">HPMBS Enterprise</h1>
-          <p className="mt-1 text-xs text-slate-500 font-medium">Multi-Tenant Hospital Management Platform</p>
+          <h1 className="text-3xl font-black text-slate-900 tracking-tight">{HOSPITAL_NAME}</h1>
+          <p className="mt-1 text-xs text-slate-500 font-medium">Hospital Information & Management System</p>
         </div>
 
         {/* Login Card */}
@@ -210,13 +144,6 @@ export const LoginPage = () => {
             </button>
           </div>
 
-          {location.state?.tenantMismatch && (
-            <div className="mb-4 p-3 rounded-lg bg-indigo-50 border border-indigo-200 text-indigo-800 text-xs font-medium flex items-center gap-2">
-              <Info size={15} className="flex-shrink-0 text-indigo-600" />
-              <span>You switched to <strong>{hospitalInfo?.name || hospitalDomain}</strong>. Please sign in with your credentials for this hospital.</span>
-            </div>
-          )}
-
           {error && (
             <div className="mb-4 p-3 rounded-lg bg-red-50 border border-red-200 text-red-700 text-xs font-medium flex items-center gap-2">
               <AlertCircle size={15} className="flex-shrink-0" />
@@ -234,16 +161,15 @@ export const LoginPage = () => {
 
               <form onSubmit={handleStaffLogin} autoComplete="off" className="space-y-4">
                 <Input
-                  label="Account Email / Phone / Login ID"
+                  label="Account Email / Staff ID"
                   type="text"
                   icon={Mail}
                   value={email}
                   onChange={(e) => setEmail(e.target.value)}
-                  placeholder="email@gmail.com or Staff ID"
+                  placeholder="admin@hospital.com or Staff ID"
                   autoComplete="off"
                   autoCapitalize="none"
                   autoCorrect="off"
-                  spellCheck={false}
                   required
                 />
 
@@ -258,7 +184,10 @@ export const LoginPage = () => {
                 />
 
                 <div className="flex items-center justify-end pt-0.5">
-                  <Link to="/forgot-password" className="text-xs font-semibold text-indigo-600 hover:text-indigo-800 hover:underline">
+                  <Link
+                    to="/forgot-password"
+                    className="text-xs font-semibold text-indigo-600 hover:text-indigo-700 hover:underline transition-colors"
+                  >
                     Forgot password?
                   </Link>
                 </div>
@@ -269,7 +198,7 @@ export const LoginPage = () => {
                   className="w-full py-2.5 font-bold mt-2"
                   isLoading={isLoading}
                 >
-                  Sign In as Staff / Admin
+                  Sign In to Workstation
                 </Button>
               </form>
             </div>
@@ -280,12 +209,12 @@ export const LoginPage = () => {
             <div>
               <div className="mb-4">
                 <h2 className="text-base font-bold text-slate-900">Patient Portal Access</h2>
-                <p className="text-xs text-slate-500">Log in using your registered Mobile Number and Date of Birth (No password required).</p>
+                <p className="text-xs text-slate-500">Enter your registered mobile number and date of birth.</p>
               </div>
 
               <form onSubmit={handlePatientLogin} autoComplete="off" className="space-y-4">
                 <Input
-                  label="Registered Mobile Number"
+                  label="Mobile Number"
                   type="text"
                   icon={Phone}
                   value={patientMobile}
@@ -296,19 +225,18 @@ export const LoginPage = () => {
                 />
 
                 <Input
-                  label="Date of Birth (DOB)"
+                  label="Date of Birth"
                   type="date"
                   icon={Calendar}
                   value={patientDob}
                   onChange={(e) => setPatientDob(e.target.value)}
-                  autoComplete="off"
                   required
                 />
 
                 <div className="p-3 bg-blue-50 border border-blue-200 text-blue-800 rounded-xl text-[11px] leading-relaxed flex items-start gap-2">
-                  <Info size={14} className="text-blue-600 inline shrink-0 mt-0.5" />
+                  <ShieldCheck size={14} className="text-blue-600 inline shrink-0 mt-0.5" />
                   <div>
-                    <strong>Patient Access:</strong> Use the mobile number registered during your hospital reception check-in and your birth date.
+                    <strong>Secure Access:</strong> Use the mobile number registered during your hospital visit.
                   </div>
                 </div>
 
@@ -385,26 +313,16 @@ export const LoginPage = () => {
             </div>
           )}
 
-          {/* HIPAA badge */}
+          {/* Security badge */}
           <div className="mt-5 flex items-center justify-center gap-1.5 text-xs text-slate-400 font-medium">
-            <ShieldCheck size={13} className="text-indigo-400" />
+            <ShieldCheck size={13} className="text-indigo-500" />
             HIPAA Compliant &bull; End-to-End Encrypted
-          </div>
-
-          <div className="mt-5 pt-4 border-t border-slate-200 text-center">
-            <Link
-              to="/register-hospital"
-              className="text-xs text-indigo-600 hover:text-indigo-700 hover:underline flex items-center justify-center gap-1.5 font-bold transition-colors"
-            >
-              <PlusCircle size={14} />
-              Hospital Executive? Register your Hospital SaaS Tenant
-            </Link>
           </div>
         </div>
 
-        {/* Footer note */}
+        {/* Footer */}
         <p className="text-center text-[11px] text-slate-400 mt-5">
-          &copy; {new Date().getFullYear()} HPMBS &bull; Trusted Healthcare IT Solutions
+          &copy; {new Date().getFullYear()} {HOSPITAL_NAME} &bull; All Rights Reserved
         </p>
       </div>
     </div>

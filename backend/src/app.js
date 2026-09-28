@@ -29,8 +29,6 @@ import notificationRoutes from './domains/notifications/notification.routes.js';
 import hospitalAdminRoutes from './domains/auth/hospital-admin.routes.js';
 import chatRoutes from './domains/chat/chat.routes.js';
 
-import { SaasService } from './domains/saas/saas.service.js';
-
 const app = express();
 
 app.set('trust proxy', 1);
@@ -54,7 +52,7 @@ app.use('/api/', apiRateLimiter);
 app.get('/', (req, res) => {
   res.status(200).json({
     status: 'UP',
-    name: 'Hospital Billing and Management System (HPMBS) Backend API',
+    name: 'Sri Vijaya Lakshmi Hospital Management System — Backend API',
     version: '1.0.0',
     documentation: 'All API routes are mounted under /api/v1/',
     healthCheck: '/api/v1/health',
@@ -66,7 +64,7 @@ app.get('/', (req, res) => {
 app.get('/api/v1/health', (req, res) => {
   res.status(200).json({
     status: 'UP',
-    system: 'HPMBS Multi-Tenant SaaS Gateway',
+    system: 'Sri Vijaya Lakshmi Hospital Management System',
     timestamp: new Date().toISOString(),
   });
 });
@@ -74,6 +72,7 @@ app.get('/api/v1/health', (req, res) => {
 // Domain Routes
 app.use('/api/v1/auth', authRoutes);
 app.use('/api/v1/setup', setupRoutes);
+// Minimal hospital info endpoint (used for login page hospital lookup)
 app.use('/api/v1/saas', saasRoutes);
 app.use('/api/v1/patients', patientRoutes);
 app.use('/api/v1/appointments', appointmentRoutes);
@@ -93,27 +92,7 @@ app.use('/api/v1/notifications', notificationRoutes);
 app.use('/api/v1/hospital-admin', hospitalAdminRoutes);
 app.use('/api/v1/chat', chatRoutes);
 
-// Automated Trial & Subscription Expiry Background Evaluator (Runs every 10 minutes)
-const subscriptionEvaluatorInterval = setInterval(() => {
-  SaasService.evaluateHospitalTrials().catch((err) =>
-    console.error('Error running trial evaluator task:', err)
-  );
-  SaasService.evaluateSubscriptionExpiry().catch((err) =>
-    console.error('Error running subscription expiry task:', err)
-  );
-}, 10 * 60 * 1000);
-subscriptionEvaluatorInterval.unref?.();
-
-// Run initial check on server boot after 10s delay
-const initialSubscriptionEvaluation = setTimeout(() => {
-  SaasService.evaluateHospitalTrials().catch(() => {});
-  SaasService.evaluateSubscriptionExpiry().catch(() => {});
-}, 10000);
-initialSubscriptionEvaluation.unref?.();
-
 // Global Error Handler
 app.use(errorHandler);
 
 export default app;
-// Server reloaded: 2026-08-06
-

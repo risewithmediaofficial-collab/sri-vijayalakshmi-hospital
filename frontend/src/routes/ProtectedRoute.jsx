@@ -1,7 +1,6 @@
 import React from 'react';
 import { Navigate, Outlet, useLocation } from 'react-router-dom';
 import { useAuthStore } from '../store/authStore';
-import { getEffectiveUserRoles } from '../components/auth/TenantRouteGuard';
 
 const checkModulePermission = (permissions, currentModule) => {
   if (!permissions) return false;
@@ -55,56 +54,15 @@ export const ProtectedRoute = ({ allowedRoles = [] }) => {
     return <Navigate to="/login" replace />;
   }
 
-  const isAdminRoute = location.pathname.startsWith('/admin') ||
-    location.pathname.startsWith('/hospital-admin') ||
-    /^\/[^/]+\/admin(\/|$)/.test(location.pathname);
-
-  const routeModules = [
-    ['/doctor/', 'doctor'], ['/reception/', 'reception'], ['/nursing/', 'nursing'],
-    ['/nurse-incharge/', 'ipd'], ['/laboratory/', 'laboratory'], ['/radiology/', 'radiology'],
-    ['/pharmacy/', 'pharmacy'], ['/billing/', 'billing'], ['/inventory/', 'inventory'],
-    ['/hr/', 'hr'], ['/emergency', 'emergency'], ['/patients', 'patients'], ['/appointments', 'appointments'],
-  ];
-  const currentModule = !isAdminRoute ? routeModules.find(([prefix]) => location.pathname.includes(prefix))?.[1] : null;
-
-  const userRoles = getEffectiveUserRoles(user);
-  const additionalRoles = userRoles.filter((r) => r !== user?.role);
-  const operationalAllowedRoles = allowedRoles.filter((role) => !['HOSPITAL_ADMIN', 'SUPER_ADMIN'].includes(role));
-
-  const isSuperAdmin = userRoles.includes('SUPER_ADMIN');
-  const isSuperAdminAllowed = allowedRoles.length === 0 || allowedRoles.includes('SUPER_ADMIN');
-
-  if (isSuperAdmin) {
-    if (isSuperAdminAllowed) {
-      return <Outlet />;
-    }
-    return <Navigate to="/403" replace />;
-  }
-
-  if (currentModule && user?.role === 'HOSPITAL_ADMIN' && !operationalAllowedRoles.some((role) => additionalRoles.includes(role))) {
-    return <Navigate to="/403" replace />;
-  }
+  const userRoles = user?.additionalRoles?.length
+    ? [user.role, ...user.additionalRoles]
+    : [user?.role].filter(Boolean);
 
   const hasRoleMatch = allowedRoles.length === 0 ||
     allowedRoles.some((role) => userRoles.includes(role));
 
-  const hasPerm = currentModule ? checkModulePermission(user?.permissions, currentModule) : false;
-
-  if (allowedRoles.length > 0 && user && !hasRoleMatch && !hasPerm) {
-    if (userRoles.includes('HOSPITAL_ADMIN') && location.pathname.startsWith('/admin')) {
-      const target = user.hospitalDomain ? `/${user.hospitalDomain}/admin/dashboard` : '/hospital-admin/dashboard';
-      return <Navigate to={target} replace />;
-    }
+  if (!hasRoleMatch) {
     return <Navigate to="/403" replace />;
-  }
-
-  if (currentModule && userRoles.includes('HOSPITAL_ADMIN') && user.enabledModules?.[currentModule] === false) {
-    return <Navigate to="/403" replace />;
-  }
-
-  if (currentModule && !userRoles.includes('HOSPITAL_ADMIN')) {
-    const allowed = checkModulePermission(user?.permissions, currentModule);
-    if (!allowed) return <Navigate to="/403" replace />;
   }
 
   return <Outlet />;

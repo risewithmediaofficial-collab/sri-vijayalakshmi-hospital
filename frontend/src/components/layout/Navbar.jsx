@@ -32,9 +32,6 @@ export const Navbar = ({ onToggleSidebar }) => {
 
   const handleSwitchMode = async (targetMode) => {
     setMode(targetMode);
-    const domainFromPath = location.pathname.split('/')[1];
-    const isKnownNonTenant = ['admin', 'hospital-admin', 'doctor', 'reception', 'billing', 'pharmacy', 'laboratory', 'radiology', 'nursing', '403', 'login', 'reset-password'].includes(domainFromPath);
-    const domain = user?.hospitalDomain || (!isKnownNonTenant && domainFromPath ? domainFromPath : null);
 
     if (targetMode === 'WORK') {
       let workUser = user;
@@ -62,15 +59,9 @@ export const Navbar = ({ onToggleSidebar }) => {
       }
       const workRoute = getDefaultWorkRoute(workUser);
       if (!workRoute) return;
-      const target = domain ? `/${domain}${workRoute}` : workRoute;
-      navigate(target);
+      navigate(workRoute);
     } else if (targetMode === 'ADMIN') {
-      if (user?.role === 'SUPER_ADMIN') {
-        navigate('/admin/dashboard');
-      } else {
-        const target = domain ? `/${domain}/admin/dashboard` : '/hospital-admin/dashboard';
-        navigate(target);
-      }
+      navigate('/admin/dashboard');
     }
   };
 
@@ -150,38 +141,22 @@ export const Navbar = ({ onToggleSidebar }) => {
           <Menu size={18} />
         </button>
 
-        {user?.role === 'SUPER_ADMIN' ? (
-          <div className="flex items-center gap-1.5 sm:gap-2 min-w-0">
-            <div className="p-1.5 rounded-lg bg-indigo-50 text-indigo-600 border border-indigo-100 shrink-0">
-              <Building2 size={16} />
-            </div>
-            <div className="hidden sm:block min-w-0">
-              <h1 className="text-xs sm:text-sm font-bold text-slate-800 leading-none truncate max-w-[100px] md:max-w-[140px] lg:max-w-[180px] xl:max-w-[220px]">
-                Super Admin Console
-              </h1>
-              <span className="text-[10px] text-slate-400 font-medium truncate block mt-0.5">
-                Platform Control
-              </span>
-            </div>
-          </div>
-        ) : (
-          <div className="flex items-center gap-1.5 sm:gap-2 p-1 -ml-1 rounded-xl text-left min-w-0">
+        <div className="flex items-center gap-1.5 sm:gap-2 p-1 -ml-1 rounded-xl text-left min-w-0">
             <div className="p-1.5 rounded-lg bg-indigo-50 text-indigo-600 border border-indigo-100 shrink-0">
               <Building2 size={16} />
             </div>
             <div className="hidden sm:block min-w-0">
               <h1
-                className="text-xs sm:text-sm font-bold text-slate-800 leading-none truncate max-w-[90px] md:max-w-[130px] lg:max-w-[170px] xl:max-w-[210px]"
-                title={user?.hospitalName || 'Healthcare System'}
+                className="text-xs sm:text-sm font-bold text-slate-800 leading-none truncate max-w-[90px] md:max-w-[130px] lg:max-w-[200px] xl:max-w-[260px]"
+                title="Sri Vijaya Lakshmi Hospital"
               >
-                {user?.hospitalName || 'Healthcare System'}
+                {user?.hospitalName || 'Sri Vijaya Lakshmi Hospital'}
               </h1>
               <span className="text-[10px] text-slate-400 font-medium truncate block mt-0.5">
-                Hospital Portal
+                Hospital Management System
               </span>
             </div>
           </div>
-        )}
       </div>
 
       {/* Center: Dual-Mode Switcher for Multi-Role / Hospital Admin */}
