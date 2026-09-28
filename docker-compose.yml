@@ -3,6 +3,7 @@ services:
     build:
       context: ./frontend
       dockerfile: Dockerfile
+    image: ${COMPOSE_PROJECT_NAME:-svlh}-frontend:latest
     container_name: ${COMPOSE_PROJECT_NAME:-svlh}_frontend
     restart: always
     ports:
@@ -35,6 +36,7 @@ services:
     build:
       context: ./backend
       dockerfile: Dockerfile
+    image: ${COMPOSE_PROJECT_NAME:-svlh}-backend:latest
     container_name: ${COMPOSE_PROJECT_NAME:-svlh}_backend
     restart: always
     env_file:
