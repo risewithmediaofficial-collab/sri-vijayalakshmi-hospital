@@ -58,11 +58,9 @@ jobs:
           host: ${{ secrets.HOST }}
           username: ${{ secrets.USERNAME }}
           key: ${{ secrets.SSH_KEY }}
-          passphrase: ${{ secrets.PASSPHRASE }}
-          password: ${{ secrets.PASSWORD }}
-          port: ${{ secrets.PORT || 22 }}
+          port: ${{ secrets.PORT }}
           timeout: 180s
-          command_timeout: 25m
+          command_timeout: 20m
           script: |
             set -e
 
