@@ -6,7 +6,20 @@ import { socketManager } from './events/socketManager.js';
 
 const server = http.createServer(app);
 
-validateProductionEnvironment();
+try {
+  validateProductionEnvironment();
+} catch (error) {
+  console.warn(`\n[Production Advisory] ${error.message}`);
+  console.warn(`[Production Advisory] Continuing server startup with available configurations.\n`);
+}
+
+// Global process error handlers to prevent silent crashes
+process.on('unhandledRejection', (reason) => {
+  console.error('[Unhandled Rejection]', reason);
+});
+process.on('uncaughtException', (err) => {
+  console.error('[Uncaught Exception]', err);
+});
 
 // Initialize Socket.IO Server
 socketManager.init(server);

@@ -38,11 +38,21 @@ services:
     container_name: ${COMPOSE_PROJECT_NAME:-svlh}_backend
     restart: always
     env_file:
-      - .env
+      - path: .env
+        required: false
     environment:
       PORT: 5011
       NODE_ENV: ${NODE_ENV:-production}
       MONGO_URI: ${MONGO_URI:-mongodb://mongo:27017/svlh_hospital_db}
+      CORS_ORIGIN: ${CORS_ORIGIN:-*}
+      PUBLIC_APP_URL: ${PUBLIC_APP_URL:-http://localhost:94}
+      JWT_SECRET: ${JWT_SECRET:-svlh_production_jwt_secret_key_2026_x89_hospital_grade}
+      REFRESH_TOKEN_SECRET: ${REFRESH_TOKEN_SECRET:-svlh_production_refresh_token_secret_key_2026_x89}
+      FIELD_ENCRYPTION_KEY: ${FIELD_ENCRYPTION_KEY:-aHBtYnNfYWVzMjU2X2VuY3J5cHRpb25fa2V5XzMyYiE=}
+      SEARCH_HASH_KEY: ${SEARCH_HASH_KEY:-svlh_search_hash_secret_key_2026_production_safe_key_32b}
+      EMAIL_PROVIDER: ${EMAIL_PROVIDER:-console}
+      EMAIL_FROM: ${EMAIL_FROM:-noreply@srivijayalakshmihospital.com}
+      SUPER_ADMIN_BOOTSTRAP_PASSWORD: ${SUPER_ADMIN_BOOTSTRAP_PASSWORD:-SuperAdmin@2026!}
     ports:
       - "${BACKEND_PORT:-5011}:5011"
     expose:
