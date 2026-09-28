@@ -8,9 +8,9 @@ const __dirname = path.dirname(__filename);
 dotenv.config({ path: path.join(__dirname, '../../.env') });
 
 export const env = {
-  PORT: process.env.PORT || 5000,
+  PORT: process.env.PORT || 5011,
   NODE_ENV: process.env.NODE_ENV || 'development',
-  MONGO_URI: process.env.MONGO_URI || 'mongodb://mongo:27017/hpmbs_db',
+  MONGO_URI: process.env.MONGO_URI || 'mongodb://mongo:27017/svlh_hospital_db',
 
   JWT_SECRET: process.env.JWT_SECRET || 'hpmbs_super_secret_jwt_key_2026_production_grade_x89',
   JWT_EXPIRES_IN: process.env.JWT_EXPIRES_IN || '30d',
@@ -22,7 +22,7 @@ export const env = {
   SEARCH_HASH_KEY: process.env.SEARCH_HASH_KEY || 'hpmbs_search_hash_secret_key_2026_production_safe_key_32b',
 
   CORS_ORIGIN: process.env.CORS_ORIGIN || '*',
-  PUBLIC_APP_URL: process.env.PUBLIC_APP_URL || 'http://localhost:5173',
+  PUBLIC_APP_URL: process.env.PUBLIC_APP_URL || 'http://localhost:94',
   EMAIL_PROVIDER: (process.env.EMAIL_PROVIDER || (process.env.NODE_ENV === 'production' ? '' : 'console')).toLowerCase(),
   EMAIL_FROM: process.env.EMAIL_FROM || '',
   RESEND_API_KEY: process.env.RESEND_API_KEY || '',

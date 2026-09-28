@@ -44,8 +44,8 @@ if [ ! -f .env ]; then
 fi
 
 # Read port
-FRONTEND_PORT=$(grep -E '^FRONTEND_PORT=' .env | cut -d '=' -f2 | tr -d '\r' || echo "80")
-FRONTEND_PORT=${FRONTEND_PORT:-80}
+FRONTEND_PORT=$(grep -E '^FRONTEND_PORT=' .env | cut -d '=' -f2 | tr -d '\r' || echo "94")
+FRONTEND_PORT=${FRONTEND_PORT:-94}
 
 echo "✓ Target Port: http://localhost:${FRONTEND_PORT}"
 

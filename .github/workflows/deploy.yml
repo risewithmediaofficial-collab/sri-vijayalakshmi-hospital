@@ -87,14 +87,14 @@ jobs:
               echo "Creating initial production .env..."
               cat << 'EOF' > .env
             COMPOSE_PROJECT_NAME=svlh
-            FRONTEND_PORT=80
-            BACKEND_PORT=5000
-            MONGO_PORT=27017
+            FRONTEND_PORT=94
+            BACKEND_PORT=5011
+            MONGO_PORT=27027
             NODE_ENV=production
             MONGO_INITDB_DATABASE=svlh_hospital_db
             MONGO_URI=mongodb://mongo:27017/svlh_hospital_db
             CORS_ORIGIN=*
-            PUBLIC_APP_URL=http://localhost
+            PUBLIC_APP_URL=http://localhost:94
             JWT_SECRET=${{ secrets.JWT_SECRET || 'svlh_prod_jwt_secret_key_2026_x89_secure' }}
             JWT_EXPIRES_IN=7d
             REFRESH_TOKEN_SECRET=${{ secrets.REFRESH_TOKEN_SECRET || 'svlh_prod_refresh_secret_key_2026_x89_secure' }}
@@ -111,7 +111,7 @@ jobs:
             docker compose down --remove-orphans || true
 
             # 5. Clean up any stale container holding the frontend port
-            FRONTEND_PORT_NUM=$(grep -E '^FRONTEND_PORT=' .env | cut -d '=' -f2 || echo "80")
+            FRONTEND_PORT_NUM=$(grep -E '^FRONTEND_PORT=' .env | cut -d '=' -f2 || echo "94")
             PORT_HOLDER=$(docker ps -q --filter "publish=${FRONTEND_PORT_NUM}")
             if [ -n "$PORT_HOLDER" ]; then
               echo "Freeing port ${FRONTEND_PORT_NUM} from container ${PORT_HOLDER}..."
