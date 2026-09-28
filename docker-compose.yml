@@ -3,19 +3,19 @@ services:
     build:
       context: ./frontend
       dockerfile: Dockerfile
-    image: ${COMPOSE_PROJECT_NAME:-svlh}-frontend:latest
-    container_name: ${COMPOSE_PROJECT_NAME:-svlh}_frontend
+    image: ${COMPOSE_PROJECT_NAME:-sri-vijayalakshmi-hospital}-frontend:latest
+    container_name: ${COMPOSE_PROJECT_NAME:-sri-vijayalakshmi-hospital}_frontend
     restart: always
     ports:
       - "${FRONTEND_PORT:-94}:80"
     depends_on:
       - backend
     networks:
-      - svlh_net
+      - sri-vijayalakshmi-hospital_net
 
   mongo:
     image: mongo:7.0
-    container_name: ${COMPOSE_PROJECT_NAME:-svlh}_mongo
+    container_name: ${COMPOSE_PROJECT_NAME:-sri-vijayalakshmi-hospital}_mongo
     restart: always
     environment:
       MONGO_INITDB_DATABASE: ${MONGO_INITDB_DATABASE:-svlh_hospital_db}
@@ -30,14 +30,14 @@ services:
       retries: 5
       start_period: 5s
     networks:
-      - svlh_net
+      - sri-vijayalakshmi-hospital_net
 
   backend:
     build:
       context: ./backend
       dockerfile: Dockerfile
-    image: ${COMPOSE_PROJECT_NAME:-svlh}-backend:latest
-    container_name: ${COMPOSE_PROJECT_NAME:-svlh}_backend
+    image: ${COMPOSE_PROJECT_NAME:-sri-vijayalakshmi-hospital}-backend:latest
+    container_name: ${COMPOSE_PROJECT_NAME:-sri-vijayalakshmi-hospital}_backend
     restart: always
     env_file:
       - path: .env
@@ -48,10 +48,10 @@ services:
       MONGO_URI: ${MONGO_URI:-mongodb://mongo:27017/svlh_hospital_db}
       CORS_ORIGIN: ${CORS_ORIGIN:-*}
       PUBLIC_APP_URL: ${PUBLIC_APP_URL:-http://localhost:94}
-      JWT_SECRET: ${JWT_SECRET:-svlh_production_jwt_secret_key_2026_x89_hospital_grade}
-      REFRESH_TOKEN_SECRET: ${REFRESH_TOKEN_SECRET:-svlh_production_refresh_token_secret_key_2026_x89}
+      JWT_SECRET: ${JWT_SECRET:-sri-vijayalakshmi-hospital_production_jwt_secret_key_2026_x89_hospital_grade}
+      REFRESH_TOKEN_SECRET: ${REFRESH_TOKEN_SECRET:-sri-vijayalakshmi-hospital_production_refresh_token_secret_key_2026_x89}
       FIELD_ENCRYPTION_KEY: ${FIELD_ENCRYPTION_KEY:-aHBtYnNfYWVzMjU2X2VuY3J5cHRpb25fa2V5XzMyYiE=}
-      SEARCH_HASH_KEY: ${SEARCH_HASH_KEY:-svlh_search_hash_secret_key_2026_production_safe_key_32b}
+      SEARCH_HASH_KEY: ${SEARCH_HASH_KEY:-sri-vijayalakshmi-hospital_search_hash_secret_key_2026_production_safe_key_32b}
       EMAIL_PROVIDER: ${EMAIL_PROVIDER:-console}
       EMAIL_FROM: ${EMAIL_FROM:-noreply@srivijayalakshmihospital.com}
       SUPER_ADMIN_BOOTSTRAP_PASSWORD: ${SUPER_ADMIN_BOOTSTRAP_PASSWORD:-SuperAdmin@2026!}
@@ -63,12 +63,12 @@ services:
       mongo:
         condition: service_healthy
     networks:
-      - svlh_net
+      - sri-vijayalakshmi-hospital_net
 
 networks:
-  svlh_net:
+  sri-vijayalakshmi-hospital_net:
     driver: bridge
 
 volumes:
   mongo_data:
-    name: ${COMPOSE_PROJECT_NAME:-svlh}_mongo_data
+    name: ${COMPOSE_PROJECT_NAME:-sri-vijayalakshmi-hospital}_mongo_data
