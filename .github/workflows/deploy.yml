@@ -45,6 +45,7 @@ jobs:
           port: ${{ secrets.PORT || 22 }}
           timeout: 180s
           command_timeout: 20m
+          debug: true
           script: |
             DEPLOY_DIR="/docker/svlh-hospital"
             if [ ! -d "$DEPLOY_DIR/.git" ]; then
