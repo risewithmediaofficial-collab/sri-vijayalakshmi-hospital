@@ -266,6 +266,19 @@ export class AuthService {
 
     user.failedLoginAttempts = 0;
     user.lockUntil = null;
+
+    // Self-healing loginIds: after data migration, loginIds may be stale or empty.
+    // Rebuild them from the current email/phone/employeeId so future logins don't fail.
+    const healedIds = new Set(Array.isArray(user.loginIds) ? user.loginIds : []);
+    if (user.email) healedIds.add(user.email.toLowerCase().trim());
+    if (user.phone) healedIds.add(user.phone.trim());
+    if (user.employeeId) {
+      healedIds.add(user.employeeId.trim());
+      healedIds.add(user.employeeId.trim().toUpperCase());
+      healedIds.add(user.employeeId.trim().toLowerCase());
+    }
+    user.loginIds = Array.from(healedIds);
+
     await user.save().catch(() => {});
 
     return await this.formatAuthResponse(user);
@@ -621,7 +634,8 @@ export class AuthService {
 
   static async updateStaffPassword(staffId, { newPassword, adminPassword }, adminUser) {
     const adminId = adminUser?.id || adminUser?._id;
-    if (!newPassword || String(newPassword).length < 8) {
+    const cleanNewPass = String(newPassword || '').trim();
+    if (!cleanNewPass || cleanNewPass.length < 8) {
       throw new ApiError(400, 'New password must be at least 8 characters long.', null, 'WEAK_PASSWORD');
     }
     if (adminUser?.role !== 'SUPER_ADMIN') {
@@ -629,8 +643,9 @@ export class AuthService {
       if (!adminDoc) {
         throw new ApiError(404, 'Admin account not found. Please log out and log in again.', null, 'NOT_FOUND');
       }
-      if (!adminPassword || !(await adminDoc.comparePassword(adminPassword))) {
-        throw new ApiError(401, 'Invalid Admin verification password. Please enter your logged-in Admin password.', null, 'INVALID_ADMIN_PASSWORD');
+      const cleanAdminPass = String(adminPassword || '').trim();
+      if (!cleanAdminPass || !(await adminDoc.comparePassword(cleanAdminPass))) {
+        throw new ApiError(400, 'Invalid Admin verification password. Please enter your logged-in Admin password.', null, 'INVALID_ADMIN_PASSWORD');
       }
     }
 
@@ -639,12 +654,24 @@ export class AuthService {
       throw new ApiError(404, 'Staff user account not found', null, 'NOT_FOUND');
     }
 
-    staffDoc.passwordHash = await bcrypt.hash(newPassword, 12);
+    staffDoc.passwordHash = await bcrypt.hash(cleanNewPass, 12);
     staffDoc.assignedPasswordHint = '';
     staffDoc.passwordResetToken = null;
     staffDoc.passwordResetExpires = null;
     staffDoc.failedLoginAttempts = 0;
     staffDoc.lockUntil = null;
+
+    // Keep loginIds in sync so the user can still log in with email/phone/employeeId
+    const loginIdsSet = new Set();
+    if (staffDoc.email) loginIdsSet.add(staffDoc.email.toLowerCase().trim());
+    if (staffDoc.phone) loginIdsSet.add(staffDoc.phone.trim());
+    if (staffDoc.employeeId) {
+      loginIdsSet.add(staffDoc.employeeId.trim());
+      loginIdsSet.add(staffDoc.employeeId.trim().toUpperCase());
+      loginIdsSet.add(staffDoc.employeeId.trim().toLowerCase());
+    }
+    staffDoc.loginIds = Array.from(loginIdsSet);
+
     await staffDoc.save();
 
 

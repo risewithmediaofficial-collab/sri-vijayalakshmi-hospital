@@ -79,8 +79,40 @@ const extractId = (val) => {
   return String(val);
 };
 
-export const activateVerifiedTenantConnection = async () => {
-  return null;
+export const activateVerifiedTenantConnection = async (user, preloadedHospital = null) => {
+  const hospitalId = extractId(user?.hospitalId);
+  if (!hospitalId || user?.role === 'SUPER_ADMIN' && !user?._hospitalContextApplied) return null;
+
+  const candidate = preloadedHospital || user?._preloadedHospital;
+  let hospital = candidate && String(candidate._id) === String(hospitalId) && candidate.storageMode !== undefined
+    ? candidate
+    : null;
+
+  if (!hospital) {
+    hospital = await Hospital.findById(hospitalId)
+      .select('_id storageMode databaseKey databaseMigrationStatus databaseProvisionedAt')
+      .lean();
+  }
+  if (!hospital) {
+    throw new Error('Authenticated hospital tenant no longer exists.');
+  }
+  if (hospital.storageMode !== 'DEDICATED') return null;
+  if (hospital.databaseMigrationStatus !== 'COPY_PREPARED' || !hospital.databaseProvisionedAt) {
+    const error = new Error('Dedicated tenant database has not passed copy verification.');
+    error.code = 'TENANT_DATABASE_NOT_READY';
+    throw error;
+  }
+  const runtimeReadiness = tenantRuntimeReadiness();
+  if (!runtimeReadiness.ready) {
+    const error = new Error(`Dedicated tenant runtime is not ready for: ${runtimeReadiness.missingModels.join(', ')}.`);
+    error.code = 'TENANT_RUNTIME_NOT_READY';
+    throw error;
+  }
+
+  const connection = getTenantConnection(hospital);
+  setTenantModelConnection({ connection, hospitalId: hospital._id });
+  user._tenantDatabase = hospital.databaseKey;
+  return connection;
 };
 
 export const verifyJwt = async (req, res, next) => {
@@ -149,12 +181,39 @@ export const verifyJwt = async (req, res, next) => {
       }
     }
 
-    // In a standalone hospital system, Hospital Admin has administrative authority
-    // and staff access is governed by hospital permissions without SaaS plan expiry.
-    req.user.subscriptionReadOnly = false;
+    // Expired subscriptions retain readable data but cannot create or mutate
+    // operational records. Notification acknowledgement and authentication
+    // remain available so the retained account is still usable for review.
+    if (req.user.role !== 'SUPER_ADMIN' && req.user.hospitalId) {
+      const hospitalAccess = await Hospital.findById(req.user.hospitalId)
+        .select('_id storageMode databaseKey databaseMigrationStatus databaseProvisionedAt status trialStatus isTrial trialEndDate subscriptionEndDate')
+        .lean();
+      if (!hospitalAccess) {
+        return sendError(res, 403, 'Your hospital tenant is no longer available.', null, 'HOSPITAL_UNAVAILABLE');
+      }
+      req.user._preloadedHospital = hospitalAccess;
+      const now = Date.now();
+      const isExpired = hospitalAccess.status === 'EXPIRED'
+        || hospitalAccess.trialStatus === 'TRIAL_EXPIRED'
+        || (hospitalAccess.isTrial && hospitalAccess.trialEndDate && new Date(hospitalAccess.trialEndDate).getTime() <= now)
+        || (!hospitalAccess.isTrial && hospitalAccess.subscriptionEndDate && new Date(hospitalAccess.subscriptionEndDate).getTime() <= now);
+      const isWrite = !['GET', 'HEAD', 'OPTIONS'].includes(req.method);
+      const retainedAccountAction = req.originalUrl.startsWith('/api/v1/notifications')
+        || req.originalUrl.startsWith('/api/v1/auth');
+      if (isExpired && isWrite && !retainedAccountAction) {
+        return sendError(
+          res,
+          402,
+          'The hospital plan has expired. Data remains available in read-only mode; renew the subscription to resume operational changes.',
+          null,
+          'SUBSCRIPTION_READ_ONLY',
+        );
+      }
+      req.user.subscriptionReadOnly = isExpired;
+    }
 
     const module = moduleForRequest(req.originalUrl);
-    if (module && currentUser) {
+    if (module && decoded.role !== 'SUPER_ADMIN' && currentUser) {
       if (req.user.role === 'HOSPITAL_ADMIN' || req.user.role === 'SUPER_ADMIN') {
         // Hospital Admin has full administrative and operational authority
       } else {
@@ -163,6 +222,27 @@ export const verifyJwt = async (req, res, next) => {
           return sendError(res, 403, 'You do not have permission to perform this action.', null, 'FORBIDDEN');
         }
       }
+    }
+
+    await applyContextIfNeeded(req);
+    const isTenantWrite = !['GET', 'HEAD', 'OPTIONS'].includes(req.method) &&
+      req.user.role !== 'SUPER_ADMIN' &&
+      req.user.hospitalId &&
+      !req.originalUrl.startsWith('/api/v1/saas');
+    if (isTenantWrite) {
+      const releaseLease = await acquireTenantWriteLease({
+        hospitalId: req.user.hospitalId,
+        method: req.method,
+        path: req.originalUrl,
+      });
+      res.once('finish', releaseLease);
+      res.once('close', releaseLease);
+    }
+    const isAuthProfileOrLogout = req.originalUrl?.startsWith('/api/v1/auth/me') ||
+      req.originalUrl?.startsWith('/api/v1/auth/logout');
+    const isSuperAdminSaas = req.user.role === 'SUPER_ADMIN' && req.originalUrl?.startsWith('/api/v1/saas');
+    if (!isAuthProfileOrLogout && !isSuperAdminSaas) {
+      await activateVerifiedTenantConnection(req.user);
     }
 
     delete req.user._preloadedHospital;

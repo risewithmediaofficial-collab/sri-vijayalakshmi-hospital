@@ -28,6 +28,7 @@ export const SuperAdminReportsPage = () => {
   // Password Update Modal State
   const [selectedStaffForPassword, setSelectedStaffForPassword] = useState(null);
   const [newPasswordInput, setNewPasswordInput] = useState('');
+  const [confirmPasswordInput, setConfirmPasswordInput] = useState('');
   const [isUpdatingPassword, setIsUpdatingPassword] = useState(false);
   const [passwordUpdateSuccess, setPasswordUpdateSuccess] = useState('');
   const [passwordUpdateError, setPasswordUpdateError] = useState('');
@@ -129,6 +130,7 @@ export const SuperAdminReportsPage = () => {
   const handleOpenPasswordModal = (staff) => {
     setSelectedStaffForPassword(staff);
     setNewPasswordInput('');
+    setConfirmPasswordInput('');
     setPasswordUpdateSuccess('');
     setPasswordUpdateError('');
   };
@@ -136,6 +138,10 @@ export const SuperAdminReportsPage = () => {
   const handleSavePassword = async () => {
     if (!newPasswordInput || newPasswordInput.trim().length < 8) {
       setPasswordUpdateError('Password must be at least 8 characters long');
+      return;
+    }
+    if (newPasswordInput !== confirmPasswordInput) {
+      setPasswordUpdateError('New password and Confirm password do not match');
       return;
     }
 
@@ -852,13 +858,29 @@ export const SuperAdminReportsPage = () => {
             )}
 
             <PasswordInput
-              label="New Password"
+              label="1. New Password"
               labelClassName="text-slate-700 font-bold"
-              placeholder="Enter new password"
+              placeholder="Enter new password (min. 8 characters)"
               value={newPasswordInput}
               onChange={(e) => setNewPasswordInput(e.target.value)}
               inputClassName="font-mono font-bold"
             />
+
+            <div>
+              <PasswordInput
+                label="2. Confirm New Password"
+                labelClassName="text-slate-700 font-bold"
+                placeholder="Re-enter the new password to confirm"
+                value={confirmPasswordInput}
+                onChange={(e) => setConfirmPasswordInput(e.target.value)}
+                inputClassName={`font-mono font-bold ${
+                  confirmPasswordInput && newPasswordInput !== confirmPasswordInput ? 'border-rose-400 bg-rose-50/50' : ''
+                }`}
+              />
+              {confirmPasswordInput && newPasswordInput !== confirmPasswordInput && (
+                <p className="text-[11px] text-rose-600 font-medium mt-1">Passwords do not match</p>
+              )}
+            </div>
 
             <div className="flex items-center justify-end gap-2 pt-2">
               <Button variant="outline" size="sm" onClick={() => setSelectedStaffForPassword(null)}>

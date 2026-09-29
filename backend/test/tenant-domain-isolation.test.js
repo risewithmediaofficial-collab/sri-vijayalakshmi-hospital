@@ -21,12 +21,15 @@ test.before(async () => {
   if (mongoose.connection.readyState === 0) {
     await connectDB();
   }
+  await autoEnsureSystemCredentials();
+
   let platformHosp = await Hospital.findOne({ code: 'PLATFORM' });
   if (!platformHosp) {
     platformHosp = await Hospital.create({
       name: 'HPMBS SaaS Platform Owner',
       code: 'PLATFORM',
       subdomain: 'platform',
+      domain: 'platform-master',
       status: 'APPROVED',
       plan: 'ENTERPRISE',
       contactName: 'Platform Master Owner',
@@ -50,7 +53,6 @@ test.before(async () => {
       isActive: true,
     });
   }
-  await autoEnsureSystemCredentials();
 });
 
 test.after(async () => {

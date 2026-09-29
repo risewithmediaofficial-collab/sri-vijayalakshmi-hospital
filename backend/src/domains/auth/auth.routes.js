@@ -41,7 +41,7 @@ router.post('/me/enable-clinic-work-mode', verifyJwt, requireRole(ROLES.HOSPITAL
 router.post('/staff', verifyJwt, requireRole(ROLES.HOSPITAL_ADMIN), createStaffUser);
 router.get('/staff', verifyJwt, getHospitalStaff);
 router.patch('/staff/:id', verifyJwt, requireRole(ROLES.HOSPITAL_ADMIN), updateStaffUser);
-router.patch('/staff/:id/password', verifyJwt, requireRole(ROLES.HOSPITAL_ADMIN), updateStaffPassword);
+router.patch('/staff/:id/password', verifyJwt, requireRole(ROLES.HOSPITAL_ADMIN, ROLES.SUPER_ADMIN), updateStaffPassword);
 router.patch('/staff/:id/permissions', verifyJwt, requireRole(ROLES.HOSPITAL_ADMIN), updateStaffPermissions);
 router.patch('/staff/:id/availability', verifyJwt, updateDoctorAvailability);
 

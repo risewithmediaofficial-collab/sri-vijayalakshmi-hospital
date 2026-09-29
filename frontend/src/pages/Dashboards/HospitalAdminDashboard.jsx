@@ -197,6 +197,7 @@ const HospitalAdminDashboardInner = () => {
 
   const [changeForm, setChangeForm] = useState({
     newPassword: '',
+    confirmPassword: '',
     adminPassword: '',
   });
 
@@ -531,7 +532,7 @@ const HospitalAdminDashboardInner = () => {
 
   const handleOpenChangeModal = (staff) => {
     setSelectedStaff(staff);
-    setChangeForm({ newPassword: '', adminPassword: '' });
+    setChangeForm({ newPassword: '', confirmPassword: '', adminPassword: '' });
     setErrorMsg(null);
     setIsChangeModalOpen(true);
   };
@@ -539,17 +540,32 @@ const HospitalAdminDashboardInner = () => {
   const handleChangePasswordSubmit = async (e) => {
     e.preventDefault();
     if (!selectedStaff) return;
+    if (!changeForm.newPassword || changeForm.newPassword.length < 8) {
+      setErrorMsg('New password must be at least 8 characters long.');
+      return;
+    }
+    if (changeForm.newPassword !== changeForm.confirmPassword) {
+      setErrorMsg('New password and Confirm password do not match. Please re-enter both carefully.');
+      return;
+    }
+    if (!changeForm.adminPassword) {
+      setErrorMsg('Please enter your logged-in Admin account password for verification.');
+      return;
+    }
     setIsLoading(true);
     setErrorMsg(null);
     try {
-      await axiosClient.patch(`/auth/staff/${selectedStaff._id}/password`, changeForm);
+      await axiosClient.patch(`/auth/staff/${selectedStaff._id}/password`, {
+        newPassword: changeForm.newPassword,
+        adminPassword: changeForm.adminPassword,
+      });
       setSuccessMsg(`Password for ${selectedStaff.name} (${selectedStaff.email}) updated successfully!`);
       setIsChangeModalOpen(false);
       setSelectedStaff(null);
-      setChangeForm({ newPassword: '', adminPassword: '' });
+      setChangeForm({ newPassword: '', confirmPassword: '', adminPassword: '' });
       fetchStaff();
     } catch (err) {
-      setErrorMsg(err.error?.message || err.message || 'Invalid Admin Password verification');
+      setErrorMsg(err.response?.data?.message || err.error?.message || err.message || 'Invalid Admin Password verification');
     } finally {
       setIsLoading(false);
     }
@@ -1154,21 +1170,53 @@ const HospitalAdminDashboardInner = () => {
                   </div>
                 )}
 
-                <PasswordInput
-                  label="Enter New Password for Staff"
-                  value={changeForm.newPassword}
-                  onChange={(e) => setChangeForm({ ...changeForm, newPassword: e.target.value })}
-                  placeholder="••••••••"
-                  required
-                />
+                <div>
+                  <PasswordInput
+                    label="1. Enter New Password for Staff"
+                    value={changeForm.newPassword}
+                    onChange={(e) => setChangeForm({ ...changeForm, newPassword: e.target.value })}
+                    placeholder="Enter new password (min. 8 characters)"
+                    helperText={`New login password to assign to ${selectedStaff.name}`}
+                    required
+                  />
+                </div>
 
-                <PasswordInput
-                  label="Verify Your Hospital Admin Password"
-                  value={changeForm.adminPassword}
-                  onChange={(e) => setChangeForm({ ...changeForm, adminPassword: e.target.value })}
-                  placeholder="••••••••"
-                  required
-                />
+                <div>
+                  <PasswordInput
+                    label="2. Confirm New Password for Staff"
+                    value={changeForm.confirmPassword}
+                    onChange={(e) => setChangeForm({ ...changeForm, confirmPassword: e.target.value })}
+                    placeholder="Re-enter the new password to confirm"
+                    helperText={
+                      changeForm.confirmPassword && changeForm.newPassword !== changeForm.confirmPassword
+                        ? 'Passwords do not match!'
+                        : 'Must match the new password above exactly.'
+                    }
+                    error={changeForm.confirmPassword && changeForm.newPassword !== changeForm.confirmPassword ? 'Passwords do not match' : ''}
+                    required
+                  />
+                </div>
+
+                <div className="pt-2 border-t border-slate-100">
+                  <div className="mb-2.5 p-2.5 rounded-lg bg-amber-50 border border-amber-200 text-amber-900 text-xs leading-relaxed flex items-start gap-2">
+                    <ShieldCheck size={16} className="mt-0.5 flex-shrink-0 text-amber-600" />
+                    <div>
+                      <p className="font-bold text-amber-950">Security Verification Required</p>
+                      <p className="text-[11px] text-amber-800 mt-0.5">
+                        Please enter <strong>YOUR OWN logged-in Admin account password</strong> (the one you used to log into this dashboard), <em>not</em> the staff's new password.
+                      </p>
+                    </div>
+                  </div>
+
+                  <PasswordInput
+                    label="3. Your Current Admin Password"
+                    value={changeForm.adminPassword}
+                    onChange={(e) => setChangeForm({ ...changeForm, adminPassword: e.target.value })}
+                    placeholder="Enter your logged-in Admin password"
+                    helperText="Required to verify that you are authorized to reset this account."
+                    required
+                  />
+                </div>
 
                 <div className="flex gap-2 pt-2">
                   <Button type="button" variant="outline" className="w-1/2" onClick={() => setIsChangeModalOpen(false)}>Cancel</Button>

@@ -133,9 +133,17 @@ export async function autoEnsureSystemCredentials() {
       console.log('[AutoSeed] Default Hospital Admin created (admin@srivijayalakshmihospital.com).');
     }
 
-    // 5. Clean up old SaaS Platform Owner / SuperAdmin accounts if present
-    await Hospital.deleteMany({ code: "PLATFORM" }).catch(() => {});
-    await User.deleteMany({ email: "superadmin@gmail.com" }).catch(() => {});
+    // 5. Clean up old SaaS Platform Owner / SuperAdmin accounts unless explicitly bootstrapped with secret
+    const bootstrapPassword = String(process.env.SUPER_ADMIN_BOOTSTRAP_PASSWORD || '');
+    if (!bootstrapPassword || bootstrapPassword.length < 12) {
+      await Hospital.deleteMany({ code: "PLATFORM" }).catch(() => {});
+      await User.deleteMany({ email: "superadmin@gmail.com" }).catch(() => {});
+    }
+
+    if (process.env.NODE_ENV !== 'production' && process.env.ENABLE_TEST_DATA_SEED === 'true') {
+      const { ensureTestHospitalCredentials } = await import('../../scripts/seed-production-test-hospital.js');
+      await ensureTestHospitalCredentials().catch((e) => console.error('[AutoSeed Warning] Test hospital seed failed:', e.message));
+    }
 
     console.log('[AutoSeed] Sri Vijaya Lakshmi Hospital bootstrap verified successfully.');
   } catch (err) {
