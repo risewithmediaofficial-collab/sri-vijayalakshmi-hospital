@@ -251,9 +251,6 @@ export const ConsultationModal = ({ isOpen, onClose, token, patient, onSuccess, 
     };
   }, [socket, isOpen, activePatient, fetchDepartmentOrders, fetchPharmacyBilled]);
 
-
-  if (!isOpen || !token) return null;
-
   const { pendingOrders, hasPendingOrders, completedDeptOrders, totalDepartmentCharges } = useMemo(() => {
     const pending = [];
     const completed = [];
@@ -467,6 +464,8 @@ export const ConsultationModal = ({ isOpen, onClose, token, patient, onSuccess, 
 
   const labelClass = 'block text-[11px] font-bold text-slate-600 mb-1.5 uppercase tracking-wider';
   const sectionBg = 'p-4 rounded-xl bg-slate-50 border border-slate-200 space-y-3';
+
+  if (!isOpen || !token) return null;
 
   return (
     <>

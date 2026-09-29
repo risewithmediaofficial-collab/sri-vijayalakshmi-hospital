@@ -1,19 +1,5 @@
 export const ROLE_PERMISSION_DEFAULTS = {
-  HOSPITAL_ADMIN: {
-    dashboard: ['view', 'manage'],
-    departments: ['view', 'manage'],
-    staffManagement: ['view', 'create', 'edit', 'delete', 'managePermissions'],
-    reports: ['view', 'generate', 'export'],
-    notifications: ['view'],
-    auditLogs: ['view'],
-    hospitalSettings: ['view', 'edit'],
-    plan: ['view'],
-    settings: ['view', 'edit'],
-    usage: ['view'],
-    admin: ['view', 'manage'],
-    requests: ['view', 'create', 'edit', 'manage', '*'],
-    pharmacy: ['view', 'create', 'edit', 'dispense', 'adjust', 'transfer', 'print', 'delete', '*'],
-  },
+  HOSPITAL_ADMIN: { '*': ['*'] },
   SUPER_ADMIN: { '*': ['*'] },
   DOCTOR: {
     dashboard: ['view'],

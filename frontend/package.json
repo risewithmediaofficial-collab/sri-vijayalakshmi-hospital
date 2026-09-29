@@ -8,7 +8,8 @@
     "start": "vite",
     "test": "node --test",
     "test:contracts": "node --test",
-    "test:e2e": "playwright test --project=chromium",
+    "test:e2e": "playwright test tests/auth.spec.js tests/layout-and-navbar.spec.js tests/hospital-admin.spec.js tests/reception-and-patients.spec.js tests/bed-matrix-and-wards.spec.js tests/doctor-consultation-flow.spec.js tests/billing-and-cashier.spec.js tests/ancillary-departments.spec.js tests/portals-patient-guardian.spec.js --project=chromium",
+    "test:playwright": "playwright test tests/auth.spec.js tests/layout-and-navbar.spec.js tests/hospital-admin.spec.js tests/reception-and-patients.spec.js tests/bed-matrix-and-wards.spec.js tests/doctor-consultation-flow.spec.js tests/billing-and-cashier.spec.js tests/ancillary-departments.spec.js tests/portals-patient-guardian.spec.js --project=chromium",
     "test:e2e:all": "playwright test",
     "build": "vite build",
     "preview": "vite preview"

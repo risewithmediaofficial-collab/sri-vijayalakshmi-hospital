@@ -41,9 +41,8 @@ export class AuthService {
   ];
 
   static staffManagementFilter(staffId, requestingUser) {
-    if (requestingUser?.role === 'SUPER_ADMIN') return { _id: staffId };
     const hospitalId = requestingUser?.hospitalId?._id || requestingUser?.hospitalId;
-    if (!hospitalId) throw new ApiError(403, 'Hospital context is required for staff management.', null, 'HOSPITAL_CONTEXT_REQUIRED');
+    if (!hospitalId) return { _id: staffId };
     return { _id: staffId, hospitalId };
   }
   static async assertStaffCreationAllowed(data, requestingUser) {
@@ -98,7 +97,8 @@ export class AuthService {
       PATIENT: '/patient-portal/dashboard',
       GUARDIAN: '/guardian-portal/dashboard',
     };
-    const defaultRoute = baseMap[user.role] || '/admin/dashboard';
+    const baseRoute = baseMap[user.role] || '/admin/dashboard';
+    const defaultRoute = user.role === 'SUPER_ADMIN' ? '/admin/dashboard' : (domain ? `/${domain}${baseRoute}` : baseRoute);
 
     return {
       user: {
@@ -329,7 +329,7 @@ export class AuthService {
     });
 
     if (!matchedPatient) {
-      throw new ApiError(401, 'Date of Birth (DOB) does not match our records for this patient. Please verify your date of birth.', null, 'DOB_MISMATCH');
+      throw new ApiError(401, 'Date of Birth (DOB) does not match patient records. Please verify your date of birth.', null, 'DOB_MISMATCH');
     }
 
     // Look up existing user strictly with role 'PATIENT' to prevent accidental admin/staff collision

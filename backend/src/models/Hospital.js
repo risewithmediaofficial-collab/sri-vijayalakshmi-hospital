@@ -54,7 +54,7 @@ const hospitalSchema = new mongoose.Schema(
     status: {
       type: String,
       enum: ['PENDING_APPROVAL', 'APPROVED', 'SUSPENDED', 'REJECTED', 'EXPIRED', 'DELETED'],
-      default: 'PENDING_APPROVAL',
+      default: 'APPROVED',
       index: true,
     },
     isDeleted: { type: Boolean, default: false, index: true },
@@ -62,7 +62,7 @@ const hospitalSchema = new mongoose.Schema(
     plan: {
       type: String,
       enum: ['BASIC', 'STANDARD', 'UNLIMITED', 'STARTER', 'PROFESSIONAL', 'ENTERPRISE', 'ADVANCED', 'CUSTOM'],
-      default: 'BASIC',
+      default: 'ENTERPRISE',
     },
     subscriptionPlanId: { type: mongoose.Schema.Types.ObjectId, ref: 'SubscriptionPlan', default: null },
     contactName: { type: String, required: true },
@@ -80,17 +80,14 @@ const hospitalSchema = new mongoose.Schema(
     // with a bcrypt hash and never persist a retrievable password.
     initialAdminPassword: { type: String, default: null, select: false },
 
-    // Trial & SaaS Subscription Management
-    isTrial: { type: Boolean, default: true },
+    // Standalone Hospital Operation (No SaaS Trial / Expiry)
+    isTrial: { type: Boolean, default: false },
     trialStartDate: { type: Date, default: Date.now },
-    trialEndDate: {
-      type: Date,
-      default: () => new Date(Date.now() + 7 * 24 * 60 * 60 * 1000), // 7-day free trial
-    },
+    trialEndDate: { type: Date, default: null },
     trialStatus: {
       type: String,
       enum: ['TRIAL_ACTIVE', 'TRIAL_EXPIRING_SOON', 'TRIAL_EXPIRED', 'SUBSCRIPTION_ACTIVE', 'SUSPENDED'],
-      default: 'TRIAL_ACTIVE',
+      default: 'SUBSCRIPTION_ACTIVE',
       index: true,
     },
     trialRemindersSent: {
