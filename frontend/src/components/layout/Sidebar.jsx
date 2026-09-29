@@ -21,10 +21,10 @@ export const WORK_MODE_NAVIGATION = [
   { title: 'Dept Responses', path: '/doctor/dashboard?tab=DEPT_RESPONSES', icon: 'FileCheck2', module: 'doctorConsultation', category: 'Clinical Workstation', requiredRoles: ['DOCTOR'] },
 
   // Front Desk & Billing
-  { title: 'Reception Desk', path: '/reception/registered-patients', icon: 'LayoutDashboard', module: 'appointments', category: 'Front Desk & Billing', requiredRoles: ['RECEPTIONIST', 'OPD_STAFF'] },
-  { title: 'Follow-Up Visits', path: '/reception/registered-patients?tab=FOLLOW_UPS', icon: 'Calendar', module: 'appointments', category: 'Front Desk & Billing', requiredRoles: ['RECEPTIONIST', 'OPD_STAFF'] },
-  { title: 'Central Billing Desk', path: '/billing/dashboard', icon: 'CreditCard', module: 'billing', category: 'Front Desk & Billing', requiredRoles: ['CASHIER', 'BILLING_STAFF'] },
-  { title: 'Receipts & Payments', path: '/billing/dashboard?tab=RECEIPTS', icon: 'Receipt', module: 'billing', category: 'Front Desk & Billing', requiredRoles: ['CASHIER', 'BILLING_STAFF'] },
+  { title: 'Reception Desk', path: '/reception/registered-patients', icon: 'LayoutDashboard', module: 'appointments', category: 'Front Desk & Billing', requiredRoles: ['RECEPTIONIST', 'OPD_STAFF', 'CASHIER', 'BILLING_STAFF'] },
+  { title: 'Follow-Up Visits', path: '/reception/registered-patients?tab=FOLLOW_UPS', icon: 'Calendar', module: 'appointments', category: 'Front Desk & Billing', requiredRoles: ['RECEPTIONIST', 'OPD_STAFF', 'CASHIER', 'BILLING_STAFF'] },
+  { title: 'Central Billing Desk', path: '/billing/dashboard', icon: 'CreditCard', module: 'billing', category: 'Front Desk & Billing', requiredRoles: ['RECEPTIONIST', 'OPD_STAFF', 'CASHIER', 'BILLING_STAFF'] },
+  { title: 'Receipts & Payments', path: '/billing/dashboard?tab=RECEIPTS', icon: 'Receipt', module: 'billing', category: 'Front Desk & Billing', requiredRoles: ['RECEPTIONIST', 'OPD_STAFF', 'CASHIER', 'BILLING_STAFF'] },
 
   // Inpatient & Ward
   { title: 'IPD Requisitions', path: '/nurse-incharge/dashboard?tab=REQUISITIONS', icon: 'BedDouble', module: 'nursing', category: 'Inpatient & Ward', requiredRoles: ['NURSE', 'NURSE_INCHARGE', 'IPD_STAFF', 'DOCTOR'] },
@@ -48,6 +48,94 @@ export const WORK_MODE_NAVIGATION = [
   // Clinic Operations
   { title: 'Inventory Desk', path: '/inventory/dashboard', icon: 'Boxes', module: 'inventory', category: 'Clinic Operations', requiredRoles: ['INVENTORY_MANAGER'] },
   { title: 'HR Desk', path: '/hr/dashboard', icon: 'UserCheck', module: 'hr', category: 'Clinic Operations', requiredRoles: ['HR_MANAGER'] },
+];
+
+export const CANONICAL_CATEGORY_ORDER = [
+  'Executive & Setup',
+  'Executive & Operations',
+  'Clinical Workstation',
+  'Front Desk & Billing',
+  'Inpatient & Ward',
+  'Support & Diagnostics',
+  'Clinic Operations',
+  'System & Analytics',
+  'Live Tracking & Audit',
+  'Emergency Services',
+  'Workstation Desks',
+  'General Modules',
+  'General',
+];
+
+export const CANONICAL_ITEM_ORDER = [
+  // Clinical Workstation
+  '/doctor/dashboard',
+  '/doctor/dashboard?tab=FOLLOW_UPS',
+  '/doctor/dashboard?tab=COMPLETED',
+  '/doctor/dashboard?tab=DEPT_RESPONSES',
+
+  // Front Desk & Billing
+  '/reception/registered-patients',
+  '/reception/registered-patients?tab=FOLLOW_UPS',
+  '/billing/dashboard',
+  '/billing/dashboard?tab=RECEIPTS',
+
+  // Inpatient & Ward
+  '/nurse-incharge/dashboard?tab=REQUISITIONS',
+  '/nurse-incharge/dashboard?tab=ADMITTED',
+  '/admin/bed-matrix',
+  '/nurse/bed-matrix',
+  '/nurse-incharge/dashboard?tab=REQUESTS',
+  '/nurse-incharge/dashboard?tab=TASKS',
+  '/nurse-incharge/dashboard',
+
+  // Support & Diagnostics
+  '/pharmacy/dashboard',
+  '/pharmacy/stock',
+  '/pharmacy/expiry-alerts',
+  '/pharmacy/audit',
+  '/laboratory/dashboard',
+  '/laboratory/dashboard?tab=SAMPLES',
+  '/laboratory/dashboard?tab=RESULTS',
+  '/laboratory/dashboard?tab=REPORTS',
+  '/radiology/dashboard',
+  '/radiology/dashboard?tab=DICOM',
+  '/radiology/dashboard?tab=REPORTS',
+
+  // Clinic Operations
+  '/inventory/dashboard',
+  '/inventory/indents',
+  '/inventory/purchase-orders',
+  '/inventory/reorder-alerts',
+  '/hr/dashboard',
+  '/hr/roster',
+  '/hr/attendance',
+  '/hr/payroll',
+
+  // Executive Setup & Operations (for Hospital Admin)
+  '/admin/dashboard',
+  '/admin/staff',
+  '/admin/departments',
+  '/admin/tariffs',
+  '/admin/doctors-management',
+  '/admin/nurses-management',
+  '/admin/reception-management',
+  '/admin/billing-management',
+  '/admin/pharmacy-management',
+  '/admin/laboratory-management',
+  '/admin/radiology-management',
+  '/admin/patients-management',
+
+  // System & Analytics
+  '/admin/reports',
+  '/admin/reports?tab=audit',
+  '/admin/dashboard?tab=notifications',
+  '/admin/plan-details',
+  '/admin/usage-limits',
+
+  // Live Tracking & Emergency
+  '/workflow/tracker',
+  '/emergency',
+  '/admin/emergency',
 ];
 
 // Canonical workflow path resolution mapping for live navigation notifications
@@ -415,11 +503,19 @@ export const Sidebar = ({ isOpen, onClose }) => {
   const isItemActive = (itemPath) => {
     const formatted = formatTenantPath(itemPath);
     const [itemPathname, itemSearch] = formatted.split('?');
-    const currentSearch = location.search.replace('?', '');
+    const currentSearch = location.search.replace(/^\?/, '');
     if (itemSearch) {
       return location.pathname === itemPathname && currentSearch === itemSearch;
     }
-    return (location.pathname === itemPathname || location.pathname === itemPath.split('?')[0]) && !location.search.includes('tab=');
+    if (location.pathname === itemPathname || location.pathname === itemPath.split('?')[0]) {
+      if (!currentSearch) return true;
+      const siblingHasExactQuery = menuItems.some((it) => {
+        const [, itQuery] = it.path.split('?');
+        return itQuery && it.path.split('?')[0] === itemPath.split('?')[0] && itQuery === currentSearch;
+      });
+      return !siblingHasExactQuery;
+    }
+    return false;
   };
 
   useEffect(() => {
@@ -457,6 +553,8 @@ export const Sidebar = ({ isOpen, onClose }) => {
     'Billing & Analytics': 'BarChart3',
     'Billing & Cashier': 'CreditCard',
     'OPD Operations': 'ClipboardList',
+    'Clinic Operations': 'Boxes',
+    'Live Tracking & Audit': 'GitBranch',
     'Emergency Services': 'ShieldAlert',
     'General': 'Layers',
     'General Modules': 'Layers',
@@ -464,23 +562,50 @@ export const Sidebar = ({ isOpen, onClose }) => {
   };
 
   const groupedCategories = React.useMemo(() => {
-    const groups = [];
     const categoryMap = new Map();
 
     menuItems.forEach((item) => {
       const catName = item.category || (isDual && currentMode === 'WORK' ? 'Workstation Desks' : 'General Modules');
       if (!categoryMap.has(catName)) {
         categoryMap.set(catName, []);
-        groups.push({ category: catName, items: categoryMap.get(catName) });
       }
       categoryMap.get(catName).push(item);
+    });
+
+    const groups = Array.from(categoryMap.entries()).map(([category, items]) => {
+      const sortedItems = [...items].sort((a, b) => {
+        const idxA = CANONICAL_ITEM_ORDER.indexOf(a.path);
+        const idxB = CANONICAL_ITEM_ORDER.indexOf(b.path);
+        if (idxA !== -1 && idxB !== -1) return idxA - idxB;
+        if (idxA !== -1) return -1;
+        if (idxB !== -1) return 1;
+        return 0;
+      });
+      return { category, items: sortedItems };
+    });
+
+    // Sort categories according to CANONICAL_CATEGORY_ORDER
+    groups.sort((a, b) => {
+      let idxA = CANONICAL_CATEGORY_ORDER.indexOf(a.category);
+      let idxB = CANONICAL_CATEGORY_ORDER.indexOf(b.category);
+      if (idxA === -1) idxA = 999;
+      if (idxB === -1) idxB = 999;
+      return idxA - idxB;
     });
 
     return groups;
   }, [menuItems, isDual, currentMode]);
 
-  // Sub-navigations / categories are closed by default
+  // Sub-navigations / categories are closed by default, but active category is automatically expanded
   const [openCategories, setOpenCategories] = useState({});
+
+  useEffect(() => {
+    groupedCategories.forEach((group) => {
+      if (group.items.some((it) => isItemActive(it.path))) {
+        setOpenCategories((prev) => (prev[group.category] ? prev : { ...prev, [group.category]: true }));
+      }
+    });
+  }, [location.pathname, location.search, groupedCategories]);
 
   const toggleCategory = (catName) => {
     setOpenCategories((prev) => ({

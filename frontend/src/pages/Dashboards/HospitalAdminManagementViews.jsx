@@ -21,7 +21,16 @@ export const HospitalAdminManagementViews = ({ viewType }) => {
   const { user } = useAuthStore();
   const { socket } = useSocket();
 
-  const formatTenantPath = (path) => path;
+  const formatTenantPath = (path) => {
+    if (!path) return path;
+    if (user?.role === 'SUPER_ADMIN') return path;
+    const domainFromPath = location.pathname.split('/')[1];
+    const isKnownNonTenant = ['admin', 'hospital-admin', 'doctor', 'reception', 'billing', 'pharmacy', 'laboratory', 'radiology', 'nursing', '403', 'login', 'reset-password'].includes(domainFromPath);
+    const domain = user?.hospitalDomain || (!isKnownNonTenant && domainFromPath ? domainFromPath : null);
+    if (!domain) return path;
+    if (path.startsWith(`/${domain}`)) return path;
+    return `/${domain}${path}`;
+  };
 
   const navigateToStaff = () => {
     navigate(formatTenantPath('/admin/staff'));
@@ -41,6 +50,10 @@ export const HospitalAdminManagementViews = ({ viewType }) => {
   const [deletedBillingSearch, setDeletedBillingSearch] = useState('');
   const [pharmacyStockSearch, setPharmacyStockSearch] = useState('');
   const [selectedInvoiceForView, setSelectedInvoiceForView] = useState(null);
+  const [patientToDelete, setPatientToDelete] = useState(null);
+  const [isDeletingPatient, setIsDeletingPatient] = useState(false);
+  const [deleteError, setDeleteError] = useState('');
+  const [patientSearchTerm, setPatientSearchTerm] = useState('');
   const [billingSummary, setBillingSummary] = useState({
     totalRevenue: 0,
     totalBills: 0,
@@ -71,6 +84,14 @@ export const HospitalAdminManagementViews = ({ viewType }) => {
       fetchData();
     };
 
+    const handlePatientDeleted = (data) => {
+      if (data?.patientId || data?.uhid) {
+        setPatients((prev) => prev.filter((p) => p._id !== data.patientId && p.uhid !== data.uhid));
+      } else {
+        fetchData();
+      }
+    };
+
     socket.on('doctor:availability_changed', handleDoctorAvailability);
     socket.on('billing:invoice_created', handleDataUpdate);
     socket.on('billing:payment_collected', handleDataUpdate);
@@ -78,6 +99,7 @@ export const HospitalAdminManagementViews = ({ viewType }) => {
     socket.on('billing:invoice_deleted', handleDataUpdate);
     socket.on('patient:registered', handleDataUpdate);
     socket.on('patient:created', handleDataUpdate);
+    socket.on('patient:deleted', handlePatientDeleted);
     socket.on('token:generated', handleDataUpdate);
     socket.on('opd_queue:status_changed', handleDataUpdate);
     socket.on('opd_queue:updated', handleDataUpdate);
@@ -98,6 +120,7 @@ export const HospitalAdminManagementViews = ({ viewType }) => {
       socket.off('billing:invoice_deleted', handleDataUpdate);
       socket.off('patient:registered', handleDataUpdate);
       socket.off('patient:created', handleDataUpdate);
+      socket.off('patient:deleted', handlePatientDeleted);
       socket.off('token:generated', handleDataUpdate);
       socket.off('opd_queue:status_changed', handleDataUpdate);
       socket.off('opd_queue:updated', handleDataUpdate);
@@ -111,6 +134,24 @@ export const HospitalAdminManagementViews = ({ viewType }) => {
       socket.off('workflow:pending_changed', handleDataUpdate);
     };
   }, [socket]);
+
+  const handleDeletePatient = async () => {
+    if (!patientToDelete) return;
+    setIsDeletingPatient(true);
+    setDeleteError('');
+    try {
+      const patientId = patientToDelete._id || patientToDelete.uhid;
+      await axiosClient.delete(`/patients/${patientId}`);
+      setPatients((prev) => prev.filter((p) => p._id !== patientToDelete._id && p.uhid !== patientToDelete.uhid));
+      setPatientToDelete(null);
+    } catch (err) {
+      console.error('Failed to delete patient:', err);
+      const errMsg = err?.response?.data?.message || err?.message || 'Failed to delete patient record';
+      setDeleteError(errMsg);
+    } finally {
+      setIsDeletingPatient(false);
+    }
+  };
 
   const fetchData = async () => {
     setIsLoading(true);
