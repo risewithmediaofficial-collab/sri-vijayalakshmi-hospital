@@ -614,42 +614,7 @@ export const ReceptionWorkspaceView = () => {
         </div>
       </div>
 
-      {/* ── Desk Navigation Tabs (Walk-In vs Follow-Up Visits) ── */}
-      <div className="flex flex-wrap items-center gap-2 border-b border-slate-200/80 pb-1">
-        <button
-          type="button"
-          onClick={() => {
-            const next = new URLSearchParams(searchParams);
-            next.delete('tab');
-            setSearchParams(next);
-          }}
-          className={`px-4 py-2 rounded-xl text-xs font-bold transition-all flex items-center gap-2 ${
-            !isFollowUpsTab
-              ? 'bg-indigo-600 text-white shadow-xs font-black'
-              : 'bg-white text-slate-600 hover:bg-slate-100 border border-slate-200'
-          }`}
-        >
-          <UserPlus size={15} />
-          Patient Intake & OPD Queue
-        </button>
 
-        <button
-          type="button"
-          onClick={() => {
-            const next = new URLSearchParams(searchParams);
-            next.set('tab', 'FOLLOW_UPS');
-            setSearchParams(next);
-          }}
-          className={`px-4 py-2 rounded-xl text-xs font-bold transition-all flex items-center gap-2 ${
-            isFollowUpsTab
-              ? 'bg-indigo-600 text-white shadow-xs font-black'
-              : 'bg-white text-slate-600 hover:bg-slate-100 border border-slate-200'
-          }`}
-        >
-          <Calendar size={15} />
-          Follow-Up Visits & Scheduled Return Dates
-        </button>
-      </div>
 
       {/* ── Main Clinic Workspace ── */}
       {isFollowUpsTab ? (
