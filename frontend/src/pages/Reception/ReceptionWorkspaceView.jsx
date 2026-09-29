@@ -406,6 +406,21 @@ export const ReceptionWorkspaceView = () => {
 
         setFormSuccess(`Registered ${createdPatient.firstName} and issued Token #${tokenData.tokenNumber}!`);
         await fetchQueuedPatients();
+
+        // Empty the intake form fields so it is immediately ready for the next patient
+        setNewPatient({
+          firstName: '',
+          lastName: '',
+          phone: '',
+          dob: '',
+          age: '',
+          gender: 'MALE',
+          guardianName: '',
+          guardianPhone: '',
+          guardianRelationship: 'Father',
+        });
+        setShowMoreDetails(false);
+        setDuplicateMatch(null);
       } else {
         setFormSuccess(`Patient registered successfully! UHID: ${createdPatient.uhid}`);
         handleResetForm();
@@ -464,6 +479,8 @@ export const ReceptionWorkspaceView = () => {
 
       setFormSuccess(`Token #${tokenData.tokenNumber} issued for ${selectedReturningPatient.firstName}!`);
       await fetchQueuedPatients();
+      setSelectedReturningPatient(null);
+      setReturningSearch('');
     } catch (err) {
       setFormError(err.response?.data?.error?.message || err.response?.data?.message || 'Failed to issue token.');
     } finally {

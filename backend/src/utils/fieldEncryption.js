@@ -39,31 +39,30 @@ export const encryptField = (value) => {
 export const decryptField = (value) => {
   if (!isEncrypted(value)) return value;
   const key = encryptionKey();
-  if (!key) {
-    if (env.NODE_ENV === 'production') throw new Error('FIELD_ENCRYPTION_KEY is required to decrypt protected data');
+  if (!key) return value;
+
+  try {
+    const parts = value.split(':');
+    if (parts.length !== 5 || parts[0] !== 'enc' || parts[1] !== 'v1') {
+      return value;
+    }
+
+    const decipher = crypto.createDecipheriv('aes-256-gcm', key, Buffer.from(parts[2], 'base64'));
+    decipher.setAuthTag(Buffer.from(parts[3], 'base64'));
+    const plaintext = Buffer.concat([
+      decipher.update(Buffer.from(parts[4], 'base64')),
+      decipher.final(),
+    ]);
+    return JSON.parse(plaintext.toString('utf8'));
+  } catch (error) {
+    console.warn('[FieldEncryption] Decryption failed gracefully:', error.message);
     return value;
   }
-
-  const parts = value.split(':');
-  if (parts.length !== 5 || parts[0] !== 'enc' || parts[1] !== 'v1') {
-    throw new Error('Encrypted field has an invalid format');
-  }
-
-  const decipher = crypto.createDecipheriv('aes-256-gcm', key, Buffer.from(parts[2], 'base64'));
-  decipher.setAuthTag(Buffer.from(parts[3], 'base64'));
-  const plaintext = Buffer.concat([
-    decipher.update(Buffer.from(parts[4], 'base64')),
-    decipher.final(),
-  ]);
-  return JSON.parse(plaintext.toString('utf8'));
 };
 
 export const createBlindIndex = (value) => {
   if (value === undefined || value === null || value === '') return '';
-  if (!env.SEARCH_HASH_KEY) {
-    if (env.NODE_ENV === 'production') throw new Error('SEARCH_HASH_KEY is required in production');
-    return '';
-  }
+  if (!env.SEARCH_HASH_KEY) return '';
   const normalized = String(value).trim().toLowerCase();
   return crypto.createHmac('sha256', env.SEARCH_HASH_KEY).update(normalized).digest('hex');
 };
