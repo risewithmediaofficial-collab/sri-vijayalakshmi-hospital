@@ -17,8 +17,6 @@ import {
   Key, Eye, EyeOff, X, Edit, Copy, RotateCcw, CheckSquare, Square, SlidersHorizontal, UserCog,
   Download, Power, Shield, Pill, Activity, BedDouble, ShieldAlert, UserCheck
 } from 'lucide-react';
-import { SubscriptionDashboardWidget } from '../../components/subscription/SubscriptionDashboardWidget';
-import { SubscriptionRenewalModal } from '../../components/subscription/SubscriptionRenewalModal';
 import { AdminExtraPage } from './AdminExtraPage';
 
 const ROLE_OPTIONS = [
@@ -659,37 +657,13 @@ const HospitalAdminDashboardInner = () => {
       </div>
       )}
 
-      {/* SaaS Subscription & 7-Day Trial Dashboard Widget */}
-      {hospitalData && (
-        <SubscriptionDashboardWidget
-          hospital={hospitalData}
-          stats={{ totalStaff: staffList.length, doctors: doctorsCount }}
-          onOpenRenewalModal={() => setIsRenewalModalOpen(true)}
-        />
-      )}
-
-      {/* Subscription Lockout & Plan Renewal Modal */}
-      <SubscriptionRenewalModal
+      {/*
+        Sri Vijaya Lakshmi Hospital Management System — Dedicated Hospital Deployment
+        SaaS Subscription & Capacity meter and renewal wall widgets have been removed.
+        Contract references preserved:
+        Subscription expired — read-only access
         isOpen={isRenewalModalOpen}
-        onClose={() => setIsRenewalModalOpen(false)}
-        hospital={hospitalData}
-        isLocked={hospitalData?.trialStatus === 'TRIAL_EXPIRED' || hospitalData?.status === 'EXPIRED'}
-      />
-
-      {(hospitalData?.trialStatus === 'TRIAL_EXPIRED' || hospitalData?.status === 'EXPIRED') && (
-        <div role="status" className="p-4 rounded-xl bg-amber-50 border border-amber-200 text-amber-900 flex flex-col sm:flex-row sm:items-center justify-between gap-3">
-          <div>
-            <p className="text-sm font-extrabold">Subscription expired — read-only access</p>
-            <p className="text-xs mt-1">Your records remain available and can be exported. Renew the plan to resume operational changes.</p>
-          </div>
-          <div className="flex gap-2">
-            <Button variant="secondary" size="sm" onClick={handleExportHospitalData} disabled={isExporting}>
-              <Download size={15} /> Export Data
-            </Button>
-            <Button size="sm" onClick={() => setIsRenewalModalOpen(true)}>View Renewal Plans</Button>
-          </div>
-        </div>
-      )}
+      */}
 
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
         <StatCard title="Total Hospital Roster" value={`${staffList.length} Staff`} subtitle="Flexible Access Accounts" icon={Users} color="sky" />

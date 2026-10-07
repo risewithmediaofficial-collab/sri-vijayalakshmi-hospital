@@ -108,6 +108,13 @@ export const AppRoutes = () => {
         {/* Shortcut redirects */}
         <Route path="/admin" element={<Navigate to="/admin/dashboard" replace />} />
         <Route path="/hospital-admin" element={<Navigate to="/admin/dashboard" replace />} />
+        <Route path="/super-admin" element={<Navigate to="/admin/dashboard" replace />} />
+        <Route path="/super-admin/*" element={<Navigate to="/admin/dashboard" replace />} />
+        <Route path="/admin/hospitals" element={<Navigate to="/admin/dashboard" replace />} />
+        <Route path="/admin/hospital-admins" element={<Navigate to="/admin/staff" replace />} />
+        <Route path="/admin/subscriptions" element={<Navigate to="/admin/tariffs" replace />} />
+        <Route path="/admin/pending-approvals" element={<Navigate to="/admin/dashboard" replace />} />
+        <Route path="/admin/audit-logs" element={<Navigate to="/admin/reports?tab=audit" replace />} />
         <Route path="/doctor" element={<Navigate to="/doctor/dashboard" replace />} />
         <Route path="/nurse" element={<Navigate to="/nursing/dashboard" replace />} />
         <Route path="/nursing" element={<Navigate to="/nursing/dashboard" replace />} />

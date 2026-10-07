@@ -40,7 +40,7 @@ export const NotificationDropdown = ({ isOpen, onClose }) => {
     GUARDIAN: '/guardian-portal/dashboard',
     PATIENT: '/patient-portal',
     HOSPITAL_ADMIN: '/admin/dashboard',
-    SUPER_ADMIN: '/admin/hospitals',
+    SUPER_ADMIN: '/admin/dashboard',
   };
 
   const formatTenantPath = (path) => path;
@@ -203,7 +203,7 @@ export const NotificationDropdown = ({ isOpen, onClose }) => {
           </div>
           <div>
             <h3 className="font-bold text-sm leading-tight flex items-center gap-1.5">
-              {user?.role === 'SUPER_ADMIN' ? 'Platform Control Center' : 'Notification Center'}
+              Notification Center
               {unreadCount > 0 && (
                 <span className="px-1.5 py-0.2 rounded-full text-[10px] font-black bg-amber-500 text-white">
                   {unreadCount} New

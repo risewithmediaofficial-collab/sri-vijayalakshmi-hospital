@@ -105,10 +105,14 @@ jobs:
           convert_markdown: false
         continue-on-error: true
 
-      - name: Send WhatsApp Failure Alert
-        if: always() && steps.run_suite.outcome != 'success' && env.WHATSAPP_PHONE != '' && env.WHATSAPP_API_KEY != ''
+      - name: Send WhatsApp Daily Report
+        if: always() && env.WHATSAPP_PHONE != '' && env.WHATSAPP_API_KEY != ''
         run: |
-          MSG="🚨 Sri Vijaya Lakshmi Hospital QA ALERT! Daily morning tests detected failures. Please inspect the visual report sent to $REPORT_EMAIL or visit GitHub Actions: $GITHUB_SERVER_URL/$GITHUB_REPOSITORY/actions/runs/$GITHUB_RUN_ID"
+          if [ "${{ steps.run_suite.outcome }}" = "success" ]; then
+            MSG="✅ Sri Vijaya Lakshmi Hospital — Daily 9:00 AM QA Report: ALL 229 TESTS PASSED! Full report sent to $REPORT_EMAIL. View run: $GITHUB_SERVER_URL/$GITHUB_REPOSITORY/actions/runs/$GITHUB_RUN_ID"
+          else
+            MSG="🚨 Sri Vijaya Lakshmi Hospital QA ALERT! Daily morning tests detected FAILURES. Please inspect the report sent to $REPORT_EMAIL or visit GitHub Actions: $GITHUB_SERVER_URL/$GITHUB_REPOSITORY/actions/runs/$GITHUB_RUN_ID"
+          fi
           ENCODED_MSG=$(node -e "console.log(encodeURIComponent(process.argv[1]))" "$MSG")
           curl -s "https://api.callmebot.com/whatsapp.php?phone=$WHATSAPP_PHONE&text=$ENCODED_MSG&apikey=$WHATSAPP_API_KEY" || true
         continue-on-error: true

@@ -44,7 +44,7 @@ export class ErrorBoundary extends React.Component {
         const roleRouteMap = {
           DOCTOR: '/doctor/dashboard',
           HOSPITAL_ADMIN: '/admin/dashboard',
-          SUPER_ADMIN: '/super-admin/dashboard',
+          SUPER_ADMIN: '/admin/dashboard',
           NURSE: '/nurse-incharge/dashboard?tab=TASKS',
           NURSE_INCHARGE: '/nurse-incharge/dashboard',
           IPD_STAFF: '/nurse-incharge/dashboard',
