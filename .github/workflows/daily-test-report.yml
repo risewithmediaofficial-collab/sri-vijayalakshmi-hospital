@@ -2,8 +2,10 @@ name: Daily 9 AM Test Suite & Email Report
 
 on:
   schedule:
-    # 03:30 UTC = 09:00 AM Indian Standard Time (IST) every day
-    - cron: '30 3 * * *'
+    # 03:25 UTC = 08:55 AM Indian Standard Time (IST) every day
+    # Uses off-peak minute 25 to bypass GitHub Actions' :00 and :30 public runner queue backlog delays,
+    # ensuring the daily test suite runs and delivers the report email right at 09:00 AM IST.
+    - cron: '25 3 * * *'
   workflow_dispatch:
     inputs:
       recipient_email:

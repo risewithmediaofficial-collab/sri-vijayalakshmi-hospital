@@ -14,7 +14,8 @@
     "migrate:encrypt-patient-data": "node scripts/migrate-encrypt-patient-data.js",
     "cleanup-seed": "node scripts/cleanup-seeded-data.js",
     "unseed": "node scripts/unseed.js",
-    "db:pull-prod": "node scripts/sync-production-to-local.js"
+    "db:pull-prod": "node scripts/sync-production-to-local.js",
+    "admin:reset": "node scripts/reset-admin-password.js"
   },
   "dependencies": {
     "bcryptjs": "^3.0.3",
