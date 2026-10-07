@@ -109,28 +109,34 @@ export async function autoEnsureSystemCredentials() {
       });
     }
 
-    // 4. Ensure at least one Hospital Admin exists
-    const existingAdmin = await User.findOne({
+    // 4. Ensure real Hospital Admin exists; clean up placeholder seed admin if production admin exists
+    const realAdmin = await User.findOne({
       role: ROLES.HOSPITAL_ADMIN,
+      email: { $ne: 'admin@srivijayalakshmihospital.com' },
       isActive: true,
     });
 
-    if (!existingAdmin) {
-      const adminPass = process.env.HOSPITAL_ADMIN_PASSWORD || "Admin@2026!";
-      await User.create({
-        hospitalId: hospital._id,
-        branchId: mainBranch._id,
-        name: "Hospital Administrator",
-        email: "admin@srivijayalakshmihospital.com",
-        loginIds: ["admin@srivijayalakshmihospital.com"],
-        passwordHash: await bcrypt.hash(adminPass, 12),
-        role: ROLES.HOSPITAL_ADMIN,
-        phone: "+91 98765 43210",
-        status: "ACTIVE",
-        isActive: true,
-        isEmailVerified: true,
-      });
-      console.log('[AutoSeed] Default Hospital Admin created (admin@srivijayalakshmihospital.com).');
+    if (realAdmin) {
+      await User.deleteMany({ email: 'admin@srivijayalakshmihospital.com' }).catch(() => {});
+    } else {
+      const existingAdmin = await User.findOne({ role: ROLES.HOSPITAL_ADMIN, isActive: true });
+      if (!existingAdmin && process.env.ENABLE_DEFAULT_ADMIN_SEED === 'true') {
+        const adminPass = process.env.HOSPITAL_ADMIN_PASSWORD || "Admin@2026!";
+        await User.create({
+          hospitalId: hospital._id,
+          branchId: mainBranch._id,
+          name: "Hospital Administrator",
+          email: "admin@srivijayalakshmihospital.com",
+          loginIds: ["admin@srivijayalakshmihospital.com"],
+          passwordHash: await bcrypt.hash(adminPass, 12),
+          role: ROLES.HOSPITAL_ADMIN,
+          phone: "+91 98765 43210",
+          status: "ACTIVE",
+          isActive: true,
+          isEmailVerified: true,
+        });
+        console.log('[AutoSeed] Default Hospital Admin created (admin@srivijayalakshmihospital.com).');
+      }
     }
 
     // 5. Clean up old SaaS Platform Owner / SuperAdmin accounts unless explicitly bootstrapped with secret

@@ -58,8 +58,6 @@ const ADMIN_TABS = [
   { key: 'notifications', label: 'Notifications', icon: Bell },
   { key: 'reports', label: 'Reports & Analytics', icon: BarChart3 },
   { key: 'audit', label: 'Audit Logs', icon: FileText },
-  { key: 'plan-details', label: 'Plan Details', icon: BadgeCheck },
-  { key: 'usage-limits', label: 'Usage & Limits', icon: Gauge },
   { key: 'settings', label: 'Hospital Settings', icon: Settings },
 ];
 
