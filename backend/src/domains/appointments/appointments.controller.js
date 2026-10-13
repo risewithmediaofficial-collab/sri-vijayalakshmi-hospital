@@ -12,7 +12,10 @@ export const issueToken = async (req, res, next) => {
 
 export const getOpdQueue = async (req, res, next) => {
   try {
-    const queue = await AppointmentsService.getOpdQueue(req.user, req.query.doctorId);
+    const queue = await AppointmentsService.getOpdQueue(req.user, req.query.doctorId, {
+      limit: req.query.limit,
+      date: req.query.date,
+    });
     return sendSuccess(res, 200, 'OPD queue retrieved successfully', queue);
   } catch (error) {
     next(error);

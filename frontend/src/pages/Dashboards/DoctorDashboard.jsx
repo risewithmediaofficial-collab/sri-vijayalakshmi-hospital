@@ -512,7 +512,7 @@ export const DoctorDashboard = () => {
       const targetDocId = user?.id || user?._id;
       const [res, invoiceRes] = await Promise.all([
         axiosClient.get('/pharmacy/prescriptions', {
-          params: targetDocId ? { doctorId: targetDocId } : {},
+          params: targetDocId ? { doctorId: targetDocId, forDoctorReview: 'true' } : { forDoctorReview: 'true' },
         }),
         axiosClient.get('/billing/doctor-review-queries'),
       ]);

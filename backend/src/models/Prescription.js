@@ -66,4 +66,8 @@ const prescriptionSchema = new mongoose.Schema(
   { timestamps: true }
 );
 
+prescriptionSchema.index({ hospitalId: 1, doctorId: 1, dispenseStatus: 1, createdAt: -1 });
+prescriptionSchema.index({ hospitalId: 1, patientId: 1, createdAt: -1 });
+prescriptionSchema.index({ hospitalId: 1, dispenseStatus: 1, createdAt: -1 });
+
 export const Prescription = tenantAwareModel(mongoose.model('Prescription', prescriptionSchema));

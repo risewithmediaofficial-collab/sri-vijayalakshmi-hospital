@@ -181,15 +181,19 @@ export class AppointmentsService {
     todayStart.setHours(0, 0, 0, 0);
     const todayEnd = new Date();
     todayEnd.setHours(23, 59, 59, 999);
+    const todayStr = new Date().toISOString().split('T')[0];
 
     const countToday = await Appointment.countDocuments({
       hospitalId,
       doctorId: doctor._id,
-      createdAt: { $gte: todayStart, $lte: todayEnd },
+      $or: [
+        { appointmentDate: todayStr },
+        { createdAt: { $gte: todayStart, $lte: todayEnd } },
+      ],
     });
 
     const tokenNumber = countToday + 1;
-    const appointmentNo = `APT-${Date.now().toString().slice(-6)}-${tokenNumber}`;
+    const appointmentNo = `APT-${todayStr.replace(/-/g, '')}-${tokenNumber}`;
 
     const appointment = await Appointment.create({
       hospitalId,
@@ -200,7 +204,7 @@ export class AppointmentsService {
       appointmentNo,
       tokenNumber,
       tokenType: data.tokenType || 'STANDARD',
-      appointmentDate: new Date(),
+      appointmentDate: data.appointmentDate ? String(data.appointmentDate).split('T')[0] : todayStr,
       status: 'WAITING',
       queuePriority: data.queuePriority || 0,
       fee: data.fee !== undefined ? data.fee : (doctor.consultationFee || 0),
@@ -248,25 +252,71 @@ export class AppointmentsService {
       .lean({ getters: true });
   }
 
-  static async getOpdQueue(user, doctorId = null) {
+  static async getOpdQueue(user, doctorId = null, options = {}) {
     const hospitalId = requireHospitalContext(user);
+    const limit = options?.limit ? Math.min(Math.max(Number(options.limit), 1), 100) : 20;
 
     const targetDocId = doctorId || user?.id || user?._id;
 
-    const filter = {
-      hospitalId,
-      status: { $in: ['WAITING', 'IN_CONSULTATION', 'WAITING_NURSE', 'WAITING_DEPARTMENT', 'HOLD', 'COMPLETED'] },
+    const targetDateStr = options?.date || new Date().toISOString().split('T')[0];
+    const todayStart = new Date();
+    todayStart.setHours(0, 0, 0, 0);
+    const todayEnd = new Date();
+    todayEnd.setHours(23, 59, 59, 999);
+
+    const todayMatch = {
+      $or: [
+        { appointmentDate: targetDateStr },
+        { createdAt: { $gte: todayStart, $lte: todayEnd } },
+      ],
     };
 
-    if (targetDocId) {
-      filter.doctorId = targetDocId;
+    const activeFilter = {
+      hospitalId,
+      ...todayMatch,
+      status: { $in: ['WAITING', 'IN_CONSULTATION', 'WAITING_NURSE', 'WAITING_DEPARTMENT', 'HOLD'] },
+    };
+    if (targetDocId) activeFilter.doctorId = targetDocId;
+
+    const completedFilter = {
+      hospitalId,
+      ...todayMatch,
+      status: 'COMPLETED',
+    };
+    if (targetDocId) completedFilter.doctorId = targetDocId;
+
+    let [activeTokens, recentCompletedTokens] = await Promise.all([
+      Appointment.find(activeFilter)
+        .populate('patientId', this.PATIENT_SAFE_FIELDS)
+        .populate('doctorId', this.DOCTOR_SAFE_FIELDS)
+        .sort(FIFO_QUEUE_SORT)
+        .limit(limit)
+        .lean({ getters: true }),
+      Appointment.find(completedFilter)
+        .populate('patientId', this.PATIENT_SAFE_FIELDS)
+        .populate('doctorId', this.DOCTOR_SAFE_FIELDS)
+        .sort({ updatedAt: -1, createdAt: -1 })
+        .limit(limit)
+        .lean({ getters: true }),
+    ]);
+
+    // Fallback if no records found for today: return active waiting tokens (max limit 20)
+    if (activeTokens.length === 0 && recentCompletedTokens.length === 0 && !options?.date) {
+      const fallbackActiveFilter = {
+        hospitalId,
+        status: { $in: ['WAITING', 'IN_CONSULTATION', 'WAITING_NURSE', 'WAITING_DEPARTMENT', 'HOLD'] },
+      };
+      if (targetDocId) fallbackActiveFilter.doctorId = targetDocId;
+
+      activeTokens = await Appointment.find(fallbackActiveFilter)
+        .populate('patientId', this.PATIENT_SAFE_FIELDS)
+        .populate('doctorId', this.DOCTOR_SAFE_FIELDS)
+        .sort(FIFO_QUEUE_SORT)
+        .limit(limit)
+        .lean({ getters: true });
     }
 
-    return await Appointment.find(filter)
-      .populate('patientId', this.PATIENT_SAFE_FIELDS)
-      .populate('doctorId', this.DOCTOR_SAFE_FIELDS)
-      .sort(FIFO_QUEUE_SORT)
-      .lean({ getters: true });
+    return [...activeTokens, ...recentCompletedTokens];
   }
 
   static async updateTokenStatus(appointmentId, status, user) {

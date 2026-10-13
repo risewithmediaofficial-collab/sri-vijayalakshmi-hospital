@@ -228,13 +228,15 @@ export class RequestsService {
     }
 
     return await PatientRequest.find(filter)
-      .populate('patientId')
-      .populate('bedId')
+      .populate('patientId', '_id firstName lastName uhid phone age gender bloodGroup category')
+      .populate('bedId', '_id bedNumber wardName roomNumber')
       .populate('assignedNurseId', 'name role')
       .populate('assignedCaretakerId', 'name role')
       .populate('acceptedBy', 'name role')
       .populate('completedBy', 'name role')
-      .sort({ createdAt: -1 });
+      .sort({ createdAt: -1 })
+      .limit(100)
+      .lean({ getters: true });
   }
 
   /**
