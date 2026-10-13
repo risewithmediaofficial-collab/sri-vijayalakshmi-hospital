@@ -532,7 +532,7 @@ export class PatientsService {
     }
   }
 
-  static async getPatients(user, query = '', targetHospitalId = null) {
+  static async getPatients(user, query = '', targetHospitalId = null, options = {}) {
     let filter = {};
     if (targetHospitalId && targetHospitalId !== 'ALL') {
       filter.hospitalId = targetHospitalId;
@@ -550,13 +550,15 @@ export class PatientsService {
       ];
     }
     // Select only fields needed for the roster list — avoid shipping full encrypted blobs
-    // Default initial fetch to latest 20 patients to keep load times instantaneous while remaining data resides in the DB
-    const fetchLimit = query ? 50 : 20;
-    return await Patient.find(filter)
-      .select('firstName lastName uhid phone gender dob admissionStatus admissionCount activeAdmissionId branchId createdAt')
-      .sort({ createdAt: -1 })
-      .limit(fetchLimit)
-      .lean();
+    let q = Patient.find(filter)
+      .select('firstName lastName uhid phone gender dob category admissionStatus admissionCount activeAdmissionId branchId createdAt')
+      .sort({ createdAt: -1 });
+
+    if (options && options.limit && options.limit > 0) {
+      q = q.limit(options.limit);
+    }
+
+    return await q.lean();
   }
 
   static async getPatientByUhid(uhid, user) {

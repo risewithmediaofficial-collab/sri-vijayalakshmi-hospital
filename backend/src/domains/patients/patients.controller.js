@@ -58,9 +58,10 @@ export const searchGlobalPatient = async (req, res, next) => {
 
 export const getPatients = async (req, res, next) => {
   try {
-    const query = req.query.q || '';
+    const query = req.query.q || req.query.query || '';
     const hospitalId = req.query.hospitalId || null;
-    const patients = await PatientsService.getPatients(req.user, query, hospitalId);
+    const limit = req.query.limit ? parseInt(req.query.limit, 10) : null;
+    const patients = await PatientsService.getPatients(req.user, query, hospitalId, { limit });
     return sendSuccess(res, 200, 'Patients retrieved successfully', patients);
   } catch (error) {
     next(error);
