@@ -26,6 +26,10 @@ appointmentSchema.index({ hospitalId: 1, doctorId: 1, appointmentDate: 1 });
 appointmentSchema.index({ hospitalId: 1, appointmentDate: 1 });
 appointmentSchema.index({ hospitalId: 1, status: 1, createdAt: -1 });
 appointmentSchema.index({ hospitalId: 1, createdAt: -1 });
+appointmentSchema.index({ hospitalId: 1, doctorId: 1, status: 1, appointmentDate: 1, tokenNumber: 1 });
+appointmentSchema.index({ hospitalId: 1, status: 1, appointmentDate: 1, tokenNumber: 1 });
+appointmentSchema.index({ hospitalId: 1, doctorId: 1, status: 1, departmentReturnedAt: 1 });
+appointmentSchema.index({ hospitalId: 1, patientId: 1, createdAt: -1 });
 appointmentSchema.plugin(encryptedFieldsPlugin, { fields: ['chiefComplaints'] });
 
 export const Appointment = tenantAwareModel(mongoose.model('Appointment', appointmentSchema));

@@ -61,4 +61,9 @@ const nurseTaskSchema = new mongoose.Schema(
   { timestamps: true }
 );
 
+nurseTaskSchema.index({ hospitalId: 1, doctorId: 1, status: 1, createdAt: -1 });
+nurseTaskSchema.index({ hospitalId: 1, assignedNurseId: 1, status: 1, createdAt: 1 });
+nurseTaskSchema.index({ hospitalId: 1, patientId: 1, createdAt: -1 });
+nurseTaskSchema.index({ hospitalId: 1, status: 1, createdAt: 1 });
+
 export const NurseTask = tenantAwareModel(mongoose.model('NurseTask', nurseTaskSchema));

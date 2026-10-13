@@ -60,4 +60,10 @@ const patientRequestSchema = new mongoose.Schema(
 
 patientRequestSchema.plugin(encryptedFieldsPlugin, { fields: ['notes', 'rejectedReason'] });
 
+patientRequestSchema.index({ hospitalId: 1, requestCategory: 1, status: 1, createdAt: -1 });
+patientRequestSchema.index({ hospitalId: 1, assignedDoctorId: 1, status: 1 });
+patientRequestSchema.index({ hospitalId: 1, assignedNurseId: 1, status: 1 });
+patientRequestSchema.index({ hospitalId: 1, assignedCaretakerId: 1, status: 1 });
+patientRequestSchema.index({ hospitalId: 1, status: 1, createdAt: -1 });
+
 export const PatientRequest = tenantAwareModel(mongoose.model('PatientRequest', patientRequestSchema));

@@ -104,41 +104,51 @@ export class WorkflowService {
       if (userRoles.has('DOCTOR')) {
         const docId = userId && mongoose.Types.ObjectId.isValid(userId) ? userId : null;
         const docQuery = docId ? { doctorId: docId } : { doctorId: null };
+        const todayStr = new Date().toISOString().split('T')[0];
+        const todayStart = new Date();
+        todayStart.setHours(0, 0, 0, 0);
+        const todayEnd = new Date();
+        todayEnd.setHours(23, 59, 59, 999);
+
         const [appointments, reports, doctorRequests, subRequests, nurseResponses, billingQueries, returnedRx] = await Promise.all([
           Appointment.find({
             ...scope,
             ...docQuery,
             status: { $in: ['WAITING', 'IN_CONSULTATION'] },
             departmentReturnedAt: null,
-          }).populate('patientId', 'firstName lastName uhid').lean(),
+            $or: [
+              { appointmentDate: todayStr },
+              { createdAt: { $gte: todayStart, $lte: todayEnd } },
+            ],
+          }).populate('patientId', 'firstName lastName uhid').sort({ appointmentDate: 1, tokenNumber: 1, createdAt: 1 }).limit(20).lean(),
           DiagnosticOrder.find({
             ...scope,
             ...docQuery,
             status: { $in: ['REPORT_UPLOADED', 'COMPLETED'] },
             reviewedAt: null,
             chargeStatus: { $nin: ['CANCELLED', 'APPROVED', 'INCLUDED_IN_FINAL_BILL'] },
-          }).populate('appointmentId').lean(),
-          PatientRequest.find({ ...scope, requestCategory: 'DOCTOR', status: { $in: ACTIVE_REQUEST_STATUSES }, ...(docId ? { $or: [{ assignedDoctorId: docId }, { assignedDoctorId: null }] } : { assignedDoctorId: null }) }).populate('patientId', 'firstName lastName uhid').lean(),
-          PharmacySubstitutionRequest.find({ ...scope, ...docQuery, status: 'PENDING' }).populate('patientId', 'firstName lastName uhid').lean(),
+          }).populate('appointmentId').limit(100).lean(),
+          PatientRequest.find({ ...scope, requestCategory: 'DOCTOR', status: { $in: ACTIVE_REQUEST_STATUSES }, ...(docId ? { $or: [{ assignedDoctorId: docId }, { assignedDoctorId: null }] } : { assignedDoctorId: null }) }).populate('patientId', 'firstName lastName uhid').limit(100).lean(),
+          PharmacySubstitutionRequest.find({ ...scope, ...docQuery, status: 'PENDING' }).populate('patientId', 'firstName lastName uhid').limit(100).lean(),
           NurseTask.find({
             ...scope,
             ...docQuery,
             status: 'ADMINISTERED',
             doctorReviewedAt: null,
             isResolved: { $ne: true },
-          }).populate('patientId', 'firstName lastName uhid').populate('appointmentId').lean(),
+          }).populate('patientId', 'firstName lastName uhid').populate('appointmentId').limit(100).lean(),
           Invoice.find({
             ...scope,
             ...(docId ? { 'doctorReviewQuery.attendingDoctorId': docId } : {}),
             'doctorReviewQuery.resolved': false,
             isDeleted: { $ne: true },
-          }).populate('patientId', 'firstName lastName uhid').lean(),
+          }).populate('patientId', 'firstName lastName uhid').limit(100).lean(),
           Prescription.find({
             ...scope,
             ...docQuery,
             dispenseStatus: 'RETURNED_TO_DOCTOR',
             'billingQuery.resolved': false,
-          }).populate('patientId', 'firstName lastName uhid').lean(),
+          }).populate('patientId', 'firstName lastName uhid').limit(100).lean(),
         ]);
 
         appointments.forEach((item) => item && tasks.push(task('DOCTOR_PATIENT', item, '/doctor/dashboard', `Patient waiting: ${item.patientId?.firstName || ''} ${item.patientId?.lastName || ''}`.trim(), { targetModule: 'doctor', patientName: `${item.patientId?.firstName || ''} ${item.patientId?.lastName || ''}`.trim(), uhid: item.patientId?.uhid })));
@@ -240,7 +250,7 @@ export class WorkflowService {
       const uniqueTasks = Array.from(new Map(validTasks.map((item) => [item.id, item])).values())
         .sort((a, b) => new Date(a.createdAt || 0) - new Date(b.createdAt || 0));
       const byPath = uniqueTasks.reduce((counts, item) => ({ ...counts, [item.linkedPath]: (counts[item.linkedPath] || 0) + 1 }), {});
-      return { total: uniqueTasks.length, byPath, tasks: uniqueTasks };
+      return { total: uniqueTasks.length, byPath, tasks: uniqueTasks.slice(0, 100) };
   }
 
 

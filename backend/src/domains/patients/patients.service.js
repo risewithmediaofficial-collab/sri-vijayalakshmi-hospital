@@ -550,10 +550,12 @@ export class PatientsService {
       ];
     }
     // Select only fields needed for the roster list — avoid shipping full encrypted blobs
+    // Default initial fetch to latest 20 patients to keep load times instantaneous while remaining data resides in the DB
+    const fetchLimit = query ? 50 : 20;
     return await Patient.find(filter)
       .select('firstName lastName uhid phone gender dob admissionStatus admissionCount activeAdmissionId branchId createdAt')
       .sort({ createdAt: -1 })
-      .limit(200)
+      .limit(fetchLimit)
       .lean();
   }
 

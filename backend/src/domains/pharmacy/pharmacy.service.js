@@ -439,12 +439,21 @@ export class PharmacyService {
     if (query?.dispenseStatus) {
       filter.dispenseStatus = query.dispenseStatus;
     }
+    if (query?.forDoctorReview === 'true') {
+      filter.$or = [
+        { dispenseStatus: 'RETURNED_TO_DOCTOR' },
+        { 'billingQuery.resolved': false, 'billingQuery.query': { $exists: true, $ne: '' } },
+      ];
+    }
+
+    const limit = Math.min(parseInt(query.limit, 10) || 100, 300);
 
     return Prescription.find(filter)
       .populate('patientId', 'firstName lastName uhid phone age gender chiefComplaints')
       .populate('doctorId', 'name specialization')
       .populate('consultationId', 'chiefComplaints vitals prescriptions consultationFee')
       .sort({ createdAt: -1 })
+      .limit(limit)
       .lean();
   }
 

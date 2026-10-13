@@ -354,7 +354,10 @@ export class NurseTasksService {
     }
 
     if (query.patientId) filter.patientId = query.patientId;
+    if (query.doctorId) filter.doctorId = query.doctorId;
     if (query.status) filter.status = query.status;
+
+    const limit = Math.min(parseInt(query.limit, 10) || 100, 300);
 
     // Strict FIFO Queue Sorting: Oldest pending tasks are shown at the TOP
     return NurseTask.find(filter)
@@ -362,6 +365,7 @@ export class NurseTasksService {
       .populate('doctorId', 'name specialization')
       .populate('assignedNurseId', 'name role')
       .sort({ createdAt: 1 })
+      .limit(limit)
       .lean();
   }
 

@@ -236,7 +236,27 @@ export const ReceptionWorkspaceView = () => {
 
   // Debounce patient directory search — avoids filtering full roster on every keystroke
   const debouncedSearchTerm = useDebounce(searchTerm, 200);
+  const debouncedReturningSearch = useDebounce(returningSearch, 200);
   const lowerSearch = debouncedSearchTerm.toLowerCase();
+
+  // Dynamically load matching patient records from server when searching
+  useEffect(() => {
+    const term = (debouncedSearchTerm || debouncedReturningSearch || '').trim();
+    if (term.length >= 2) {
+      axiosClient.get('/patients', { params: { query: term } })
+        .then((res) => {
+          const list = Array.isArray(res) ? res : (res?.data ?? []);
+          if (Array.isArray(list) && list.length > 0) {
+            setPatients((prev) => {
+              const existingIds = new Set(prev.map((p) => String(p._id)));
+              const newItems = list.filter((p) => !existingIds.has(String(p._id)));
+              return newItems.length > 0 ? [...prev, ...newItems] : prev;
+            });
+          }
+        })
+        .catch(() => {});
+    }
+  }, [debouncedSearchTerm, debouncedReturningSearch]);
 
   // Deduplicate directory patient list by _id and uhid
   const uniquePatients = React.useMemo(() => {
